@@ -23,39 +23,55 @@ interface MenuContextType {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
-// Helper to upload base64 image to Supabase Storage and return public URL
-const uploadMenuImage = async (base64Data?: string | null): Promise<string> => {
-  // If no new image is provided or if it's already a URL, return it or a placeholder
-  if (!base64Data || !base64Data.startsWith('data:image')) {
-    return base64Data || 'https://placehold.co/300x200.png';
+// Helper to upload image to Supabase Storage and return public URL
+const uploadMenuImage = async (imageDataUrl?: string | null): Promise<string | null> => {
+  // If no new image is provided (null/undefined) or it's an existing HTTP URL, pass it through.
+  if (!imageDataUrl || imageDataUrl.startsWith('http')) {
+    return imageDataUrl;
+  }
+
+  // If it's not a data URL, something is wrong.
+  if (!imageDataUrl.startsWith('data:image')) {
+    console.error("Invalid image data format provided.");
+    throw new Error("Format data gambar tidak valid.");
   }
 
   try {
-    // Convert base64 to a Blob for uploading
-    const response = await fetch(base64Data);
+    const response = await fetch(imageDataUrl);
     const blob = await response.blob();
+
+    if (!blob.type.startsWith('image/')) {
+       throw new Error('Tipe file tidak valid, hanya gambar yang diizinkan.');
+    }
+
     const fileExtension = blob.type.split('/')[1];
-    const filePath = `public/${Date.now()}.${fileExtension}`;
+    const filePath = `public/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
 
     const { error: uploadError } = await supabase.storage
       .from('menu-images') // Bucket name in Supabase
       .upload(filePath, blob, {
         contentType: blob.type,
-        upsert: true,
+        upsert: false, // Use false to avoid overwriting by chance
       });
 
-    if (uploadError) throw uploadError;
-
-    // Get the public URL of the uploaded file
-    const { data: { publicUrl } } = supabase.storage
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      throw uploadError;
+    }
+    
+    const { data } = supabase.storage
       .from('menu-images')
       .getPublicUrl(filePath);
+
+    if (!data?.publicUrl) {
+        throw new Error("Tidak dapat mengambil URL publik setelah unggahan selesai.");
+    }
       
-    return publicUrl;
+    return data.publicUrl;
   } catch (error) {
-    console.error('Error uploading image:', error);
-    // Fallback to a placeholder if upload fails
-    return 'https://placehold.co/300x200.png';
+    console.error('Error during image upload process:', error);
+    // Re-throw the error to be handled by the calling function (e.g., show a toast)
+    throw new Error('Unggahan gambar gagal. Silakan coba lagi.');
   }
 };
 
