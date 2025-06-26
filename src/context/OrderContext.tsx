@@ -82,11 +82,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         quantity: item.quantity,
         price: item.price,
         vendor: item.vendor,
-        image_url: item.image_url,
-        status: initialStatus, // Set initial status for each item
+        image_url: item.image_url, // Make sure image_url is carried over from cart
+        status: initialStatus,
       })),
       total_amount: totalAmount,
-      // status field is now purely for DB, not direct use. We derive it.
       status: initialStatus,
       payment_method: paymentMethod,
     };
