@@ -82,7 +82,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         quantity: item.quantity,
         price: item.price,
         vendor: item.vendor,
-        image_url: item.image_url, // Make sure image_url is carried over from cart
+        image_url: item.image_url, // This was the missing field
         status: initialStatus,
       })),
       total_amount: totalAmount,
