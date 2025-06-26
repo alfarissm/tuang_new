@@ -55,7 +55,7 @@ export default function VendorReportsPage() {
       <p className="text-muted-foreground">Analisis penjualan dari warung Anda ({vendorName}).</p>
       <Card>
         <CardHeader>
-          <CardTitle>Penjualan Harian</CardTitle>
+          <CardTitle className="font-headline">Penjualan Harian</CardTitle>
           <CardDescription>Jumlah item terjual per hari.</CardDescription>
         </CardHeader>
         <CardContent>

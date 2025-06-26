@@ -150,7 +150,7 @@ export default function VendorOrdersPage() {
                           <div className="p-4">
                              <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Detail Item</CardTitle>
+                                    <CardTitle className="text-lg font-headline">Detail Item</CardTitle>
                                     {order.payment_method === 'cash' && order.status === 'Order Placed' && (
                                         <div className="flex items-center justify-between">
                                             <CardDescription className="text-destructive">

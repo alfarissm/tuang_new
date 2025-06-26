@@ -77,7 +77,7 @@ export default function CheckoutPage() {
   if (cart.length === 0 && !isLoading) {
     return (
         <div className="container mx-auto max-w-2xl py-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Keranjang Anda Kosong</h2>
+            <h2 className="text-2xl font-bold mb-4 font-headline">Keranjang Anda Kosong</h2>
             <p className="text-muted-foreground mb-6">Sepertinya Anda belum memesan apa pun. Silakan kembali ke menu untuk memesan.</p>
             <Button asChild>
                 <Link href="/">Kembali ke Menu</Link>
@@ -165,7 +165,7 @@ export default function CheckoutPage() {
                             <FormControl>
                                 <RadioGroupItem value="qris" id="qris" className="sr-only" />
                             </FormControl>
-                            <Label htmlFor="qris" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", field.value === 'qris' && "border-accent")}>
+                            <Label htmlFor="qris" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", field.value === 'qris' && "border-accent")}>
                                 <CreditCard className="mb-3 h-6 w-6" />
                                 QRIS
                             </Label>
@@ -174,7 +174,7 @@ export default function CheckoutPage() {
                             <FormControl>
                                 <RadioGroupItem value="cash" id="cash" className="sr-only" />
                             </FormControl>
-                            <Label htmlFor="cash" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", field.value === 'cash' && "border-accent")}>
+                            <Label htmlFor="cash" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", field.value === 'cash' && "border-accent")}>
                                 <Wallet className="mb-3 h-6 w-6" />
                                 Tunai
                             </Label>

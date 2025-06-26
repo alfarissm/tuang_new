@@ -86,11 +86,11 @@ export default function VendorDashboardPage() {
       </div>
        <Card>
         <CardHeader>
-          <CardTitle>Manajemen</CardTitle>
-          <CardDescription>Kelola pesanan dan menu anda.</CardDescription>
+          <CardTitle className="font-headline">Manajemen Cepat</CardTitle>
+          <CardDescription>Pilih dari menu di samping untuk mengelola pesanan dan menu anda.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Pilih dari menu di samping untuk memulai.</p>
+          <p>Gunakan navigasi di sebelah kiri untuk memulai.</p>
         </CardContent>
       </Card>
     </div>

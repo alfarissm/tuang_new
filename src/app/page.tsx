@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, PlusCircle, MinusCircle, ShoppingCart, Moon, Sun } from "lucide-react";
+import { Search, PlusCircle, MinusCircle, ShoppingCart, Moon, Sun, Utensils } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -231,34 +231,46 @@ export default function HomePage() {
             </div>
 
             {isLoading ? <MenuGridSkeleton /> : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                {filteredMenuItems.map((item) => (
-                  <Card key={item.id} className="overflow-hidden flex flex-col group">
-                    <CardHeader className="p-0 relative">
-                      <Image
-                        src={item.image_url || 'https://placehold.co/300x200.png'}
-                        alt={item.name}
-                        width={300}
-                        height={200}
-                        className="w-full h-32 sm:h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                        data-ai-hint="food meal"
-                      />
-                       <Badge variant="secondary" className="absolute top-2 left-2">{item.vendor}</Badge>
-                    </CardHeader>
-                    <CardContent className="p-3 md:p-4 flex-grow flex flex-col">
-                      <h3 className="text-base md:text-lg font-bold font-headline leading-tight flex-grow">{item.name}</h3>
-                      <p className="text-lg font-semibold text-accent mt-2">
-                        Rp{item.price.toLocaleString("id-ID")}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="p-3 md:p-4 pt-0">
-                      <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => addToCart(item)}>
-                        <PlusCircle className="mr-2 h-5 w-5" /> Tambah
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+                <>
+                {filteredMenuItems.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                        {filteredMenuItems.map((item) => (
+                        <Card key={item.id} className="overflow-hidden flex flex-col group">
+                            <CardHeader className="p-0 relative">
+                            <Image
+                                src={item.image_url || 'https://placehold.co/300x200.png'}
+                                alt={item.name}
+                                width={300}
+                                height={200}
+                                className="w-full h-32 sm:h-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                                data-ai-hint="food meal"
+                            />
+                            <Badge variant="secondary" className="absolute top-2 left-2">{item.vendor}</Badge>
+                            </CardHeader>
+                            <CardContent className="p-3 md:p-4 flex-grow flex flex-col">
+                            <h3 className="text-base md:text-lg font-bold font-headline leading-tight flex-grow">{item.name}</h3>
+                            <p className="text-lg font-semibold text-accent mt-2">
+                                Rp{item.price.toLocaleString("id-ID")}
+                            </p>
+                            </CardContent>
+                            <CardFooter className="p-3 md:p-4 pt-0">
+                            <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => addToCart(item)}>
+                                <PlusCircle className="mr-2 h-5 w-5" /> Tambah
+                            </Button>
+                            </CardFooter>
+                        </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 col-span-full">
+                        <Utensils className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-medium">Menu Tidak Ditemukan</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Coba ubah kata kunci pencarian atau filter kategori Anda.
+                        </p>
+                    </div>
+                )}
+                </>
             )}
           </div>
           

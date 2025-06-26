@@ -126,7 +126,7 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
   if (!order) {
     return (
         <div className="container mx-auto max-w-2xl py-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Pesanan Tidak Ditemukan</h2>
+            <h2 className="text-2xl font-bold mb-4 font-headline">Pesanan Tidak Ditemukan</h2>
             <p className="text-muted-foreground mb-6">Sepertinya ada yang salah. Silakan buat pesanan baru.</p>
             <Button asChild>
                 <Link href="/" onClick={handleNewOrder}>Buat Pesanan Baru</Link>

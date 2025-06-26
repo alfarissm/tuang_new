@@ -52,6 +52,7 @@ import {
 import type { MenuItem } from '@/lib/types';
 import { useMenu } from '@/context/MenuContext';
 import { PaginationControls } from '@/components/ui/pagination-controls';
+import Link from 'next/link';
 
 const emptyMenu: Partial<MenuItem> = {
     name: '',
@@ -204,7 +205,7 @@ export default function AdminMenusPage() {
       </div>
       {(vendors.length === 0 || categories.length === 0) && (
         <div className="p-4 text-sm text-center text-muted-foreground bg-muted rounded-md">
-            Anda harus menambahkan <Link href="/admin/vendors" className="font-bold underline">Penjual</Link> dan <Link href="/admin/categories" className="font-bold underline">Kategori</Link> terlebih dahulu sebelum bisa menambahkan menu.
+            Anda harus menambahkan <Link href="/admin/sellers" className="font-bold underline">Penjual</Link> dan <Link href="/admin/categories" className="font-bold underline">Kategori</Link> terlebih dahulu sebelum bisa menambahkan menu.
         </div>
       )}
       <Card>

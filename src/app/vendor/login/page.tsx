@@ -21,7 +21,7 @@ export default function VendorLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [selectedVendor, setSelectedVendor] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [password, setPassword] = React.useState("password123");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
 
