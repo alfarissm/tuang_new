@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -33,7 +34,7 @@ type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
 export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { cart, totalAmount, setCustomerName, setCustomerId } = useCart();
+  const { cart, totalAmount } = useCart();
   const { addOrder } = useOrders();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,11 +48,9 @@ export default function CheckoutPage() {
 
   async function onSubmit(data: CheckoutFormValues) {
     setIsLoading(true);
-    setCustomerName(data.name);
-    setCustomerId(data.id);
     
     try {
-        const orderId = await addOrder(data.paymentMethod as "qris" | "cash");
+        const orderId = await addOrder(data.paymentMethod as "qris" | "cash", { name: data.name, id: data.id });
         
         if (data.paymentMethod === 'qris') {
             router.push(`/payment/qris/${orderId}`);

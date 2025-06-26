@@ -24,7 +24,7 @@ const getOverallStatus = (items: Order['items']): OrderItemStatus => {
 
 interface OrderContextType {
   orders: Order[];
-  addOrder: (paymentMethod: PaymentMethod) => Promise<string>;
+  addOrder: (paymentMethod: PaymentMethod, customerDetails: { name: string; id: string }) => Promise<string>;
   updateItemStatus: (orderId: string, itemId: number, status: OrderItemStatus) => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderItemStatus) => Promise<void>;
   addRatingToOrder: (orderId: string, rating: number) => Promise<void>;
@@ -38,7 +38,7 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { cart, totalAmount, tableNumber, customerName, customerId } = useCart();
+  const { cart, totalAmount, tableNumber } = useCart();
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -66,15 +66,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchOrders]);
 
-  const addOrder = useCallback(async (paymentMethod: PaymentMethod): Promise<string> => {
+  const addOrder = useCallback(async (paymentMethod: PaymentMethod, customerDetails: { name: string; id: string }): Promise<string> => {
     const orderId = `ORD${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
     const initialStatus: OrderItemStatus = paymentMethod === 'qris' ? 'Payment Confirmed' : 'Order Placed';
     
     const newOrder = {
       id: orderId,
       table_number: tableNumber,
-      customer_name: customerName,
-      customer_id: customerId,
+      customer_name: customerDetails.name,
+      customer_id: customerDetails.id,
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -95,7 +95,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     return orderId;
-  }, [cart, totalAmount, tableNumber, customerName, customerId]);
+  }, [cart, totalAmount, tableNumber]);
   
   const updateItemStatus = useCallback(async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
     const order = orders.find(o => o.id === orderId);
