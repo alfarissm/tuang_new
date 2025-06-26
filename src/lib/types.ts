@@ -37,6 +37,7 @@ export interface Order {
     quantity: number;
     price: number;
     vendor: string;
+    image_url: string | null;
     status: OrderItemStatus; 
   }>;
   total_amount: number;

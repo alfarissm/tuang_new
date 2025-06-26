@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, CheckCircle, FileText, Bell, Star, Wallet, Loader2, Hourglass } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -210,9 +211,12 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
               <Separator />
                {order.items.map(item => (
                 <div className="flex justify-between items-center" key={item.id}>
-                    <div>
-                        <span>{item.name} x {item.quantity}</span>
-                        <p className="text-xs text-muted-foreground">{item.vendor}</p>
+                    <div className="flex items-center gap-4">
+                        <Image src={item.image_url || 'https://placehold.co/64x64.png'} alt={item.name} width={48} height={48} className="rounded-md object-cover h-12 w-12" data-ai-hint="food meal"/>
+                        <div>
+                            <span>{item.name} x {item.quantity}</span>
+                            <p className="text-xs text-muted-foreground">{item.vendor}</p>
+                        </div>
                     </div>
                     <div className="text-right">
                        <span>Rp{(item.price * item.quantity).toLocaleString("id-ID")}</span>

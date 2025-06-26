@@ -74,11 +74,16 @@ export default function QrisPaymentPage({ params }: { params: { id: string } }) 
             />
           </div>
           <Separator />
-          <div className="space-y-2 text-sm">
+          <div className="space-y-4 text-sm">
             <h3 className="font-semibold text-center text-lg mb-2 font-headline">Ringkasan Pesanan</h3>
             {order.items.map(item => (
-              <div className="flex justify-between" key={item.id}>
-                <span>{item.name} x {item.quantity}</span>
+              <div className="flex justify-between items-center" key={item.id}>
+                 <div className="flex items-center gap-3">
+                    <Image src={item.image_url || 'https://placehold.co/64x64.png'} alt={item.name} width={40} height={40} className="rounded-md object-cover h-10 w-10" data-ai-hint="food meal"/>
+                    <div>
+                        <p className="leading-tight">{item.name} x {item.quantity}</p>
+                    </div>
+                 </div>
                 <span>Rp{(item.price * item.quantity).toLocaleString("id-ID")}</span>
               </div>
             ))}

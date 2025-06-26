@@ -13,9 +13,11 @@ const getOverallStatus = (items: Order['items']): OrderItemStatus => {
   const allCompleted = items.every(item => item.status === 'Completed');
   if (allCompleted) return 'Completed';
 
-  const anyConfirmed = items.some(item => item.status === 'Payment Confirmed');
+  // Check if *any* item has been confirmed. This marks the whole order as processing.
+  const anyConfirmed = items.some(item => item.status === 'Payment Confirmed' || item.status === 'Completed');
   if (anyConfirmed) return 'Payment Confirmed';
   
+  // If nothing is confirmed or completed, it's still just placed.
   return 'Order Placed';
 };
 
@@ -42,12 +44,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       if (error) throw error;
-      // Derive the overall status for each order upon fetching
-      const ordersWithDerivedStatus = data.map(order => ({
-        ...order,
-        status: getOverallStatus(order.items)
-      }));
-      setOrders(ordersWithDerivedStatus || []);
+      setOrders(data || []);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -71,6 +68,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const addOrder = async (paymentMethod: PaymentMethod): Promise<string> => {
     const orderId = `ORD${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
+    // For QRIS, payment is assumed confirmed immediately upon reaching QRIS page.
     const initialStatus: OrderItemStatus = paymentMethod === 'qris' ? 'Payment Confirmed' : 'Order Placed';
     
     const newOrder = {
@@ -84,10 +82,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         quantity: item.quantity,
         price: item.price,
         vendor: item.vendor,
+        image_url: item.image_url,
         status: initialStatus, // Set initial status for each item
       })),
       total_amount: totalAmount,
-      status: initialStatus, // Initial overall status
+      // status field is now purely for DB, not direct use. We derive it.
+      status: initialStatus,
       payment_method: paymentMethod,
     };
 
@@ -106,10 +106,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const updatedItems = order.items.map(item => 
       item.id === itemId ? { ...item, status: newStatus } : item
     );
-
-    const overallStatus = getOverallStatus(updatedItems);
     
-    const { error } = await supabase.from('orders').update({ items: updatedItems, status: overallStatus }).eq('id', orderId);
+    const { error } = await supabase.from('orders').update({ items: updatedItems }).eq('id', orderId);
      if (error) {
         console.error('Error updating item status:', error);
         throw error;
@@ -120,9 +118,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const order = orders.find(o => o.id === orderId);
     if (!order) throw new Error("Order not found");
 
-    // When updating the whole order, all items get the new status
+    // When updating the whole order (e.g. for cash payment confirmation), all items get the new status
     const updatedItems = order.items.map(item => ({ ...item, status }));
-    const { error } = await supabase.from('orders').update({ items: updatedItems, status }).eq('id', orderId);
+    const { error } = await supabase.from('orders').update({ items: updatedItems }).eq('id', orderId);
 
     if (error) {
         console.error('Error updating order status:', error);
@@ -139,21 +137,33 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   const getOrderById = useCallback((orderId: string) => {
-    return orders.find(order => order.id === orderId);
+    const order = orders.find(order => order.id === orderId);
+    if (!order) return undefined;
+    // Return order with derived status
+    return { ...order, status: getOverallStatus(order.items) };
   }, [orders]);
   
   const getVendorOrders = useCallback((vendorName: string) => {
      return orders
-      .filter(order => order.items.some(item => item.vendor === vendorName))
       .map(order => {
+        // First, filter to see if this vendor has items in this order
         const vendorItems = order.items.filter(item => item.vendor === vendorName);
+        if (vendorItems.length === 0) {
+          return null; // This order is not for this vendor
+        }
+
+        // If it is, calculate the total ONLY for this vendor's items
         const vendorTotal = vendorItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        
+        // Return a new order object containing only this vendor's items and total
         return {
           ...order,
           items: vendorItems,
           total_amount: vendorTotal,
+          status: getOverallStatus(order.items), // Overall status is still derived from ALL items
         };
       })
+      .filter((order): order is Order => order !== null) // Filter out the nulls
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [orders]);
 

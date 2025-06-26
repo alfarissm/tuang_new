@@ -2,15 +2,7 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Select,
@@ -24,9 +16,11 @@ import { useAuth } from '@/context/AuthContext';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useToast } from '@/hooks/use-toast';
 import type { OrderItemStatus } from '@/lib/types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 const ITEMS_PER_PAGE = 5;
 
@@ -61,10 +55,10 @@ export default function VendorOrdersPage() {
     
     React.useEffect(() => {
       // Automatically open the first order on the page if it's not completed
-      if (paginatedOrders.length > 0 && paginatedOrders[0].status !== 'Completed') {
+      if (paginatedOrders.length > 0 && paginatedOrders[0].status !== 'Completed' && openOrders.length === 0) {
         setOpenOrders([paginatedOrders[0].id]);
       }
-    }, [paginatedOrders, currentPage]);
+    }, [paginatedOrders, currentPage, openOrders]);
 
 
     const handleItemStatusChange = async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
@@ -111,120 +105,96 @@ export default function VendorOrdersPage() {
       <h2 className="text-3xl font-bold tracking-tight font-headline">Kelola Pesanan</h2>
       <p className="text-muted-foreground">Lihat dan kelola pesanan yang masuk untuk {vendorName}.</p>
       
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Detail Pesanan</TableHead>
-                <TableHead>Pelanggan</TableHead>
-                <TableHead className="text-right">Total Anda</TableHead>
-                <TableHead className="text-center">Status Pesanan</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedOrders.length > 0 ? (
-                paginatedOrders.map((order) => (
-                  <Collapsible asChild key={order.id} open={openOrders.includes(order.id)} onOpenChange={() => toggleOrder(order.id)}>
-                    <>
-                    <TableRow className="bg-muted/50 data-[state=open]:bg-muted">
-                      <TableCell className="font-medium">#{order.id.substring(0, 7)}</TableCell>
-                      <TableCell>{order.customer_name}</TableCell>
-                      <TableCell className="text-right">Rp{order.total_amount.toLocaleString("id-ID")}</TableCell>
-                      <TableCell className="text-center">
-                          <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
-                      </TableCell>
-                       <TableCell>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="w-full">
-                              {openOrders.includes(order.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span className="sr-only">Toggle</span>
-                            </Button>
-                          </CollapsibleTrigger>
-                      </TableCell>
-                    </TableRow>
-                    <CollapsibleContent asChild>
-                       <tr className="bg-background">
-                        <TableCell colSpan={5} className="p-0">
-                          <div className="p-4">
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg font-headline">Detail Item</CardTitle>
-                                    {order.payment_method === 'cash' && order.status === 'Order Placed' && (
-                                        <div className="flex items-center justify-between">
-                                            <CardDescription className="text-destructive">
-                                                Pesanan ini menunggu konfirmasi pembayaran tunai.
-                                            </CardDescription>
-                                            <Button size="sm" onClick={() => handleCashPaymentConfirmation(order.id)}>Konfirmasi Pembayaran</Button>
-                                        </div>
-                                    )}
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Item</TableHead>
-                                                <TableHead className="text-center">Jumlah</TableHead>
-                                                <TableHead className="text-center">Status Item</TableHead>
-                                                <TableHead className="text-center w-[200px]">Aksi</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {order.items.map(item => (
-                                                <TableRow key={item.id}>
-                                                    <TableCell>{item.name}</TableCell>
-                                                    <TableCell className="text-center">{item.quantity}</TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Select 
-                                                            value={item.status} 
-                                                            onValueChange={(value) => handleItemStatusChange(order.id, item.id, value as OrderItemStatus)}
-                                                            disabled={order.status === 'Order Placed'}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Ubah Status" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="Payment Confirmed">Sedang Diproses</SelectItem>
-                                                                <SelectItem value="Completed">Selesai</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                             </Card>
+      <div className="space-y-4">
+        {paginatedOrders.length > 0 ? (
+          paginatedOrders.map((order) => (
+            <Collapsible
+              key={order.id}
+              open={openOrders.includes(order.id)}
+              onOpenChange={() => toggleOrder(order.id)}
+              className="space-y-2"
+            >
+              <Card>
+                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-lg" onClick={() => toggleOrder(order.id)}>
+                  <div className="flex items-center gap-4">
+                     <Button variant="ghost" size="icon" className="h-9 w-9 data-[state=open]:rotate-180 transition-transform">
+                        <ChevronDown className="h-5 w-5" />
+                        <span className="sr-only">Toggle</span>
+                      </Button>
+                    <div>
+                      <p className="font-semibold text-primary">#{order.id.substring(0, 7)}</p>
+                      <p className="text-sm font-medium">{order.customer_name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-4">
+                     <div className="text-right">
+                        <p className="font-bold">Rp{order.total_amount.toLocaleString("id-ID")}</p>
+                        <p className="text-xs text-muted-foreground">{order.items.length} item</p>
+                     </div>
+                    <Badge variant={getStatusVariant(order.status)} className="h-6 text-xs">{order.status}</Badge>
+                  </div>
+                </div>
+                
+                <CollapsibleContent className="px-4 pb-4">
+                  <div className="border-t pt-4 space-y-4">
+                    {order.payment_method === 'cash' && order.status === 'Order Placed' && (
+                        <Alert>
+                            <Wallet className="h-4 w-4" />
+                            <AlertTitle className="font-headline">Konfirmasi Pembayaran</AlertTitle>
+                            <AlertDescription className="flex justify-between items-center">
+                                Pesanan ini menunggu pembayaran tunai.
+                                <Button size="sm" onClick={() => handleCashPaymentConfirmation(order.id)}>Konfirmasi Bayar</Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    <div className="space-y-4">
+                      {order.items.map(item => (
+                        <div key={item.id} className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                          <div className="md:col-span-2">
+                            <p className="font-medium">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">x {item.quantity}</p>
                           </div>
-                        </TableCell>
-                      </tr>
-                    </CollapsibleContent>
-                    </>
-                  </Collapsible>
-                ))
-              ) : (
-                <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                        Belum ada pesanan yang masuk.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <CardFooter>
-            <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                className="w-full"
-            />
-        </CardFooter>
-      </Card>
+                          <div className="text-left md:text-center">
+                             <Badge variant={getStatusVariant(item.status)}>{item.status === 'Payment Confirmed' ? 'Diproses' : item.status}</Badge>
+                          </div>
+                          <div>
+                            <Select 
+                                value={item.status} 
+                                onValueChange={(value) => handleItemStatusChange(order.id, item.id, value as OrderItemStatus)}
+                                disabled={order.status === 'Order Placed'}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Ubah Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Payment Confirmed">Proses</SelectItem>
+                                    <SelectItem value="Completed">Selesai</SelectItem>
+                                </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Belum ada pesanan yang masuk.</p>
+            </CardContent>
+          </Card>
+        )}
+
+         <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            className="pt-4"
+        />
+      </div>
     </div>
   )
 }

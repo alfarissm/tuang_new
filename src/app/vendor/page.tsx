@@ -21,7 +21,9 @@ export default function VendorDashboardPage() {
     
     const revenueToday = vendorOrders.reduce((total, order) => {
       if (isToday(new Date(order.created_at))) {
-        return total + order.total_amount;
+        // Recalculate total only for this vendor's items in the order for that day
+        const vendorItemsTotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        return total + vendorItemsTotal;
       }
       return total;
     }, 0);
