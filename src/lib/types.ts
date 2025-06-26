@@ -23,7 +23,9 @@ export interface Vendor {
   created_at?: string;
 }
 
-// The 'items' array will be stored as a JSONB column in Supabase
+export type OrderItemStatus = 'Order Placed' | 'Payment Confirmed' | 'Completed';
+
+
 export interface Order {
   id: string;
   table_number: string;
@@ -35,9 +37,10 @@ export interface Order {
     quantity: number;
     price: number;
     vendor: string;
+    status: OrderItemStatus; 
   }>;
   total_amount: number;
-  status: 'Order Placed' | 'Payment Confirmed' | 'Completed';
+  status: OrderItemStatus; 
   payment_method: 'qris' | 'cash';
   created_at: string;
   rating?: number;

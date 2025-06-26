@@ -12,8 +12,9 @@ import Link from "next/link";
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useMenu } from "@/context/MenuContext";
+import { OrderItemStatus } from "@/lib/types";
 
-const getStatusVariant = (status: 'Order Placed' | 'Payment Confirmed' | 'Completed') => {
+const getStatusVariant = (status: OrderItemStatus) => {
     switch(status) {
         case 'Completed':
             return 'default'

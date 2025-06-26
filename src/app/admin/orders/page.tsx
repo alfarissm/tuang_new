@@ -16,12 +16,11 @@ import { useOrders } from '@/context/OrderContext';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-
-type Status = 'Order Placed' | 'Payment Confirmed' | 'Completed';
+import type { OrderItemStatus } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 10;
 
-const getStatusVariant = (status: Status) => {
+const getStatusVariant = (status: OrderItemStatus) => {
     switch(status) {
         case 'Completed':
             return 'default'

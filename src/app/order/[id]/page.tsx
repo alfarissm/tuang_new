@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, FileText, Bell, Star, Wallet, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Bell, Star, Wallet, Loader2, Hourglass } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -12,15 +12,24 @@ import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrderContext';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { OrderItemStatus } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
-type Status = 'Order Placed' | 'Payment Confirmed' | 'Completed';
-
-const statuses: Status[] = ['Order Placed', 'Payment Confirmed', 'Completed'];
+const statuses: OrderItemStatus[] = ['Order Placed', 'Payment Confirmed', 'Completed'];
 const statusIcons = {
   'Order Placed': FileText,
   'Payment Confirmed': CheckCircle,
   'Completed': Bell
 };
+
+const getItemStatusVariant = (status: OrderItemStatus) => {
+    switch(status) {
+        case 'Completed': return 'default';
+        case 'Payment Confirmed': return 'secondary';
+        case 'Order Placed': return 'outline';
+        default: return 'outline';
+    }
+}
 
 const RatingInput = ({ orderId, currentRating }: { orderId: string, currentRating?: number }) => {
   const { addRatingToOrder } = useOrders();
@@ -91,7 +100,7 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
     if (order?.status === 'Completed' && !hasNotified) {
         toast({
             title: "Pesanan Selesai!",
-            description: "Pesanan Anda telah selesai dan siap diambil.",
+            description: "Semua item pesanan Anda telah selesai dan siap diambil.",
             variant: "default",
             className: "bg-accent text-accent-foreground",
         });
@@ -200,9 +209,15 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
               </div>
               <Separator />
                {order.items.map(item => (
-                <div className="flex justify-between" key={item.id}>
-                    <span>{item.name} x {item.quantity}</span>
-                    <span>Rp{(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                <div className="flex justify-between items-center" key={item.id}>
+                    <div>
+                        <span>{item.name} x {item.quantity}</span>
+                        <p className="text-xs text-muted-foreground">{item.vendor}</p>
+                    </div>
+                    <div className="text-right">
+                       <span>Rp{(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                       <Badge variant={getItemStatusVariant(item.status)} className="ml-2 text-xs">{item.status === 'Payment Confirmed' ? 'Diproses' : item.status}</Badge>
+                    </div>
                 </div>
                ))}
               <Separator />

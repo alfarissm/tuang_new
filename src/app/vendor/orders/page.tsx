@@ -23,12 +23,14 @@ import { useOrders } from '@/context/OrderContext';
 import { useAuth } from '@/context/AuthContext';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useToast } from '@/hooks/use-toast';
-
-type Status = 'Order Placed' | 'Payment Confirmed' | 'Completed';
+import type { OrderItemStatus } from '@/lib/types';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const ITEMS_PER_PAGE = 5;
 
-const getStatusVariant = (status: Status) => {
+const getStatusVariant = (status: OrderItemStatus) => {
     switch(status) {
         case 'Completed':
             return 'default'
@@ -42,12 +44,13 @@ const getStatusVariant = (status: Status) => {
 }
 
 export default function VendorOrdersPage() {
-    const { getVendorOrders, updateOrderStatus } = useOrders();
+    const { getVendorOrders, updateItemStatus, updateOrderStatus } = useOrders();
     const { auth } = useAuth();
     const { toast } = useToast();
     const vendorName = auth.vendorName || "";
     const orders = useMemo(() => getVendorOrders(vendorName), [getVendorOrders, vendorName]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [openOrders, setOpenOrders] = useState<string[]>([]);
 
     const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
     const paginatedOrders = useMemo(() => {
@@ -55,120 +58,157 @@ export default function VendorOrdersPage() {
         const endIndex = startIndex + ITEMS_PER_PAGE;
         return orders.slice(startIndex, endIndex);
     }, [orders, currentPage]);
+    
+    React.useEffect(() => {
+      // Automatically open the first order on the page if it's not completed
+      if (paginatedOrders.length > 0 && paginatedOrders[0].status !== 'Completed') {
+        setOpenOrders([paginatedOrders[0].id]);
+      }
+    }, [paginatedOrders, currentPage]);
 
-    const handleStatusChange = async (orderId: string, newStatus: Status) => {
+
+    const handleItemStatusChange = async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
         try {
-            await updateOrderStatus(orderId, newStatus);
+            await updateItemStatus(orderId, itemId, newStatus);
             toast({
-                title: "Status Diperbarui",
-                description: `Status pesanan #${orderId.substring(0,7)} telah diubah menjadi "${newStatus}".`,
+                title: "Status Item Diperbarui",
+                description: `Status item telah diubah menjadi "${newStatus}".`,
                 className: "bg-accent text-accent-foreground"
             })
         } catch (error) {
             toast({
                 title: "Gagal Memperbarui Status",
-                description: `Terjadi kesalahan saat mengubah status pesanan.`,
+                description: `Terjadi kesalahan saat mengubah status item.`,
                 variant: "destructive"
             })
         }
     };
+    
+    // For cash orders, the vendor needs to confirm payment for the whole order
+    const handleCashPaymentConfirmation = async (orderId: string) => {
+        try {
+            await updateOrderStatus(orderId, 'Payment Confirmed');
+            toast({
+                title: "Pembayaran Dikonfirmasi",
+                description: `Status pesanan #${orderId.substring(0,7)} telah diubah menjadi "Payment Confirmed".`,
+                className: "bg-accent text-accent-foreground"
+            })
+        } catch (error) {
+             toast({
+                title: "Gagal Konfirmasi Pembayaran",
+                description: `Terjadi kesalahan.`,
+                variant: "destructive"
+            })
+        }
+    }
+    
+    const toggleOrder = (orderId: string) => {
+      setOpenOrders(prev => prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]);
+    }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 md:pt-6">
       <h2 className="text-3xl font-bold tracking-tight font-headline">Kelola Pesanan</h2>
       <p className="text-muted-foreground">Lihat dan kelola pesanan yang masuk untuk {vendorName}.</p>
       
-      {/* Mobile View */}
-      <div className="grid gap-4 md:hidden">
-        {paginatedOrders.length > 0 ? (
-          paginatedOrders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader className="p-4">
-                <CardTitle className="text-lg">Pesanan #{order.id.substring(0,7)}</CardTitle>
-                <CardDescription>Pelanggan: {order.customer_name}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Jumlah Item</span>
-                  <span className="font-medium">{order.items.reduce((acc, item) => acc + item.quantity, 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-medium">Rp{order.total_amount.toLocaleString("id-ID")}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                   <span className="text-muted-foreground">Status</span>
-                   <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
-                </div>
-              </CardContent>
-              <CardFooter className="p-4">
-                <Select value={order.status} onValueChange={(value) => handleStatusChange(order.id, value as Status)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Ubah Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Order Placed">Order Diterima</SelectItem>
-                    <SelectItem value="Payment Confirmed">Pembayaran Dikonfirmasi</SelectItem>
-                    <SelectItem value="Completed">Selesai</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardFooter>
-            </Card>
-          ))
-        ) : (
-          <div className="text-center text-muted-foreground py-12">
-            Belum ada pesanan yang masuk.
-          </div>
-        )}
-        <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-        />
-      </div>
-
-      {/* Desktop View */}
-      <Card className="hidden md:block">
-        <CardContent className="p-0 mt-6">
+      <Card>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
+                <TableHead>Detail Pesanan</TableHead>
                 <TableHead>Pelanggan</TableHead>
-                <TableHead>Jumlah Item</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Aksi</TableHead>
+                <TableHead className="text-right">Total Anda</TableHead>
+                <TableHead className="text-center">Status Pesanan</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedOrders.length > 0 ? (
                 paginatedOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customer_name}</TableCell>
-                    <TableCell>{order.items.reduce((acc, item) => acc + item.quantity, 0)}</TableCell>
-                    <TableCell className="text-right">Rp{order.total_amount.toLocaleString("id-ID")}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Select value={order.status} onValueChange={(value) => handleStatusChange(order.id, value as Status)}>
-                        <SelectTrigger className="w-[200px] mx-auto">
-                          <SelectValue placeholder="Ubah Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Order Placed">Order Diterima</SelectItem>
-                          <SelectItem value="Payment Confirmed">Pembayaran Dikonfirmasi</SelectItem>
-                          <SelectItem value="Completed">Selesai</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
+                  <Collapsible asChild key={order.id} open={openOrders.includes(order.id)} onOpenChange={() => toggleOrder(order.id)}>
+                    <>
+                    <TableRow className="bg-muted/50 data-[state=open]:bg-muted">
+                      <TableCell className="font-medium">#{order.id.substring(0, 7)}</TableCell>
+                      <TableCell>{order.customer_name}</TableCell>
+                      <TableCell className="text-right">Rp{order.total_amount.toLocaleString("id-ID")}</TableCell>
+                      <TableCell className="text-center">
+                          <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
+                      </TableCell>
+                       <TableCell>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="w-full">
+                              {openOrders.includes(order.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              <span className="sr-only">Toggle</span>
+                            </Button>
+                          </CollapsibleTrigger>
+                      </TableCell>
+                    </TableRow>
+                    <CollapsibleContent asChild>
+                       <tr className="bg-background">
+                        <TableCell colSpan={5} className="p-0">
+                          <div className="p-4">
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Detail Item</CardTitle>
+                                    {order.payment_method === 'cash' && order.status === 'Order Placed' && (
+                                        <div className="flex items-center justify-between">
+                                            <CardDescription className="text-destructive">
+                                                Pesanan ini menunggu konfirmasi pembayaran tunai.
+                                            </CardDescription>
+                                            <Button size="sm" onClick={() => handleCashPaymentConfirmation(order.id)}>Konfirmasi Pembayaran</Button>
+                                        </div>
+                                    )}
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Item</TableHead>
+                                                <TableHead className="text-center">Jumlah</TableHead>
+                                                <TableHead className="text-center">Status Item</TableHead>
+                                                <TableHead className="text-center w-[200px]">Aksi</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {order.items.map(item => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>{item.name}</TableCell>
+                                                    <TableCell className="text-center">{item.quantity}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Select 
+                                                            value={item.status} 
+                                                            onValueChange={(value) => handleItemStatusChange(order.id, item.id, value as OrderItemStatus)}
+                                                            disabled={order.status === 'Order Placed'}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Ubah Status" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="Payment Confirmed">Sedang Diproses</SelectItem>
+                                                                <SelectItem value="Completed">Selesai</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                             </Card>
+                          </div>
+                        </TableCell>
+                      </tr>
+                    </CollapsibleContent>
+                    </>
+                  </Collapsible>
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                         Belum ada pesanan yang masuk.
                     </TableCell>
                 </TableRow>

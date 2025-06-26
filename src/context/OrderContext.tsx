@@ -1,18 +1,30 @@
 
 "use client";
 
-import type { Order } from '@/lib/types';
+import type { Order, OrderItemStatus } from '@/lib/types';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useCart } from './CartContext';
 import { supabase } from '@/lib/supabase';
 
-type Status = 'Order Placed' | 'Payment Confirmed' | 'Completed';
 type PaymentMethod = 'qris' | 'cash';
+
+// Helper function to derive the overall order status from its items
+const getOverallStatus = (items: Order['items']): OrderItemStatus => {
+  const allCompleted = items.every(item => item.status === 'Completed');
+  if (allCompleted) return 'Completed';
+
+  const anyConfirmed = items.some(item => item.status === 'Payment Confirmed');
+  if (anyConfirmed) return 'Payment Confirmed';
+  
+  return 'Order Placed';
+};
+
 
 interface OrderContextType {
   orders: Order[];
   addOrder: (paymentMethod: PaymentMethod) => Promise<string>;
-  updateOrderStatus: (orderId: string, status: Status) => Promise<void>;
+  updateItemStatus: (orderId: string, itemId: number, status: OrderItemStatus) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: OrderItemStatus) => Promise<void>;
   addRatingToOrder: (orderId: string, rating: number) => Promise<void>;
   getOrderById: (orderId: string) => Order | undefined;
   getVendorOrders: (vendorName: string) => Order[];
@@ -27,11 +39,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const { cart, totalAmount, tableNumber, customerName, customerId } = useCart();
 
   const fetchOrders = useCallback(async () => {
-    // We don't set loading to true here to avoid flickering on re-fetches from subscriptions
     try {
       const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       if (error) throw error;
-      setOrders(data || []);
+      // Derive the overall status for each order upon fetching
+      const ordersWithDerivedStatus = data.map(order => ({
+        ...order,
+        status: getOverallStatus(order.items)
+      }));
+      setOrders(ordersWithDerivedStatus || []);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -42,10 +58,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchOrders();
     
-    // Set up a realtime subscription
     const channel = supabase.channel('realtime-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        fetchOrders(); // Refetch on any change
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
       })
       .subscribe();
     
@@ -56,22 +71,24 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const addOrder = async (paymentMethod: PaymentMethod): Promise<string> => {
     const orderId = `ORD${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
+    const initialStatus: OrderItemStatus = paymentMethod === 'qris' ? 'Payment Confirmed' : 'Order Placed';
+    
     const newOrder = {
       id: orderId,
       table_number: tableNumber,
       customer_name: customerName,
-      customer_id: customerId, // Use customerId from context
+      customer_id: customerId,
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
         quantity: item.quantity,
         price: item.price,
         vendor: item.vendor,
+        status: initialStatus, // Set initial status for each item
       })),
       total_amount: totalAmount,
-      status: 'Order Placed' as Status,
+      status: initialStatus, // Initial overall status
       payment_method: paymentMethod,
-      // created_at is handled by Supabase (default NOW())
     };
 
     const { error } = await supabase.from('orders').insert([newOrder]);
@@ -79,12 +96,34 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('Error adding order:', error);
       throw error;
     }
-    // No need to fetch manually, realtime subscription will handle it.
     return orderId;
   };
+  
+  const updateItemStatus = async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) throw new Error("Order not found");
 
-  const updateOrderStatus = async (orderId: string, status: Status) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    const updatedItems = order.items.map(item => 
+      item.id === itemId ? { ...item, status: newStatus } : item
+    );
+
+    const overallStatus = getOverallStatus(updatedItems);
+    
+    const { error } = await supabase.from('orders').update({ items: updatedItems, status: overallStatus }).eq('id', orderId);
+     if (error) {
+        console.error('Error updating item status:', error);
+        throw error;
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderItemStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) throw new Error("Order not found");
+
+    // When updating the whole order, all items get the new status
+    const updatedItems = order.items.map(item => ({ ...item, status }));
+    const { error } = await supabase.from('orders').update({ items: updatedItems, status }).eq('id', orderId);
+
     if (error) {
         console.error('Error updating order status:', error);
         throw error;
@@ -104,21 +143,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [orders]);
   
   const getVendorOrders = useCallback((vendorName: string) => {
-    return orders.filter(order => 
-      order.items.some(item => item.vendor === vendorName)
-    ).map(order => {
-      // Create a vendor-specific view of the order
-      const vendorItems = order.items.filter(item => item.vendor === vendorName);
-      const vendorTotal = vendorItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-      return {
-        ...order,
-        items: vendorItems,
-        total_amount: vendorTotal, // Show the total for this vendor only
-      };
-    });
+     return orders
+      .filter(order => order.items.some(item => item.vendor === vendorName))
+      .map(order => {
+        const vendorItems = order.items.filter(item => item.vendor === vendorName);
+        const vendorTotal = vendorItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        return {
+          ...order,
+          items: vendorItems,
+          total_amount: vendorTotal,
+        };
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [orders]);
 
-  const value = { orders, addOrder, updateOrderStatus, getOrderById, getVendorOrders, addRatingToOrder, isLoading };
+  const value = { orders, addOrder, updateItemStatus, updateOrderStatus, getOrderById, getVendorOrders, addRatingToOrder, isLoading };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
 }
