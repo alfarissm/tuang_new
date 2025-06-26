@@ -2,7 +2,7 @@
 "use client";
 
 import type { Order, OrderItemStatus } from '@/lib/types';
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useCart } from './CartContext';
 import { supabase } from '@/lib/supabase';
 
@@ -66,9 +66,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchOrders]);
 
-  const addOrder = async (paymentMethod: PaymentMethod): Promise<string> => {
+  const addOrder = useCallback(async (paymentMethod: PaymentMethod): Promise<string> => {
     const orderId = `ORD${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
-    // For QRIS, payment is assumed confirmed immediately upon reaching QRIS page.
     const initialStatus: OrderItemStatus = paymentMethod === 'qris' ? 'Payment Confirmed' : 'Order Placed';
     
     const newOrder = {
@@ -82,7 +81,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         quantity: item.quantity,
         price: item.price,
         vendor: item.vendor,
-        image_url: item.image_url, // This was the missing field
+        image_url: item.image_url,
         status: initialStatus,
       })),
       total_amount: totalAmount,
@@ -96,9 +95,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     return orderId;
-  };
+  }, [cart, totalAmount, tableNumber, customerName, customerId]);
   
-  const updateItemStatus = async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
+  const updateItemStatus = useCallback(async (orderId: string, itemId: number, newStatus: OrderItemStatus) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) throw new Error("Order not found");
 
@@ -111,9 +110,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         console.error('Error updating item status:', error);
         throw error;
     }
-  };
+  }, [orders]);
 
-  const updateOrderStatus = async (orderId: string, status: OrderItemStatus) => {
+  const updateOrderStatus = useCallback(async (orderId: string, status: OrderItemStatus) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) throw new Error("Order not found");
 
@@ -125,15 +124,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         console.error('Error updating order status:', error);
         throw error;
     }
-  };
+  }, [orders]);
 
-  const addRatingToOrder = async (orderId: string, rating: number) => {
+  const addRatingToOrder = useCallback(async (orderId: string, rating: number) => {
     const { error } = await supabase.from('orders').update({ rating }).eq('id', orderId);
     if (error) {
         console.error('Error adding rating:', error);
         throw error;
     }
-  };
+  }, []);
 
   const getOrderById = useCallback((orderId: string) => {
     const order = orders.find(order => order.id === orderId);
@@ -166,7 +165,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [orders]);
 
-  const value = { orders, addOrder, updateItemStatus, updateOrderStatus, getOrderById, getVendorOrders, addRatingToOrder, isLoading };
+  const value = useMemo(() => ({ orders, addOrder, updateItemStatus, updateOrderStatus, getOrderById, getVendorOrders, addRatingToOrder, isLoading }), [orders, addOrder, updateItemStatus, updateOrderStatus, getOrderById, getVendorOrders, addRatingToOrder, isLoading]);
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
 }
