@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -22,8 +21,8 @@ import { cn } from "@/lib/utils";
 import { useOrders } from "@/context/OrderContext";
 
 const checkoutFormSchema = z.object({
-  name: z.string().min(2, "Nama harus diisi, minimal 2 karakter."),
-  id: z.string().min(5, "NIM/NIP harus diisi, minimal 5 karakter."),
+  name: z.string().min(1, { message: "Nama lengkap tidak boleh kosong." }),
+  id: z.string().min(1, { message: "NIM / NIP tidak boleh kosong." }),
   paymentMethod: z.enum(["qris", "cash"], {
     required_error: "Anda harus memilih metode pembayaran.",
   }),
