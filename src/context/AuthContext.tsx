@@ -30,22 +30,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const loginVendor = useCallback(async (vendorName: string, password: string) => {
-    const { data, error } = await supabase
-        .from('vendors')
-        .select('password')
-        .eq('name', vendorName)
-        .single();
+    // Panggil fungsi database (RPC) yang aman untuk verifikasi password
+    const { data, error } = await supabase.rpc('verify_vendor_password', {
+      p_name: vendorName,
+      p_password: password
+    });
 
-    if (error || !data) {
-        throw new Error("Vendor tidak ditemukan atau terjadi kesalahan.");
+    if (error) {
+      console.error("RPC Error:", error);
+      throw new Error("Terjadi kesalahan saat verifikasi. Coba lagi nanti.");
     }
     
-    // !! PENTING: Ini adalah perbandingan teks biasa dan TIDAK AMAN untuk produksi.
-    // Di aplikasi nyata, Anda harus menggunakan hashing (misalnya, bcrypt) di sisi server.
-    if (data.password !== password) {
-        throw new Error("Password yang dimasukkan salah.");
+    // Jika data (hasil) adalah false, berarti password atau nama warung salah
+    if (!data) {
+      throw new Error("Password atau nama warung yang dimasukkan salah.");
     }
 
+    // Jika berhasil, set state dan arahkan ke dasbor vendor
     setAuth({ isAdmin: false, isVendor: true, vendorName });
     router.push('/vendor');
   }, [router]);

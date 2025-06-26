@@ -71,7 +71,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       const [menuRes, categoryRes, vendorRes] = await Promise.all([
           supabase.from('menu_items').select('*').order('name', { ascending: true }),
           supabase.from('categories').select('*').order('name', { ascending: true }),
-          supabase.from('vendors').select('*').order('name', { ascending: true })
+          // Jangan ambil kolom password ke client
+          supabase.from('vendors').select('id, name, owner, created_at').order('name', { ascending: true })
       ]);
 
       if (menuRes.error) throw menuRes.error;
@@ -156,20 +157,23 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   };
 
   const addVendor = async (name: string, owner: string | undefined, password: string) => {
-    const { error } = await supabase.from('vendors').insert([{ name, owner, password }]);
+    const { error } = await supabase.rpc('manage_vendor_with_hashed_password', {
+      p_id: null,
+      p_name: name,
+      p_owner: owner,
+      p_password: password
+    });
     if (error) throw error;
   };
 
   const updateVendor = async (vendor: Vendor) => {
-    const updateData: { name: string; owner?: string; password?: string } = {
-        name: vendor.name,
-        owner: vendor.owner
-    };
-    // Only include password in the update if a new one was provided
-    if (vendor.password) {
-        updateData.password = vendor.password;
-    }
-    const { error } = await supabase.from('vendors').update(updateData).eq('id', vendor.id);
+    const { error } = await supabase.rpc('manage_vendor_with_hashed_password', {
+      p_id: vendor.id,
+      p_name: vendor.name,
+      p_owner: vendor.owner,
+      // Password bisa kosong jika tidak ingin diubah
+      p_password: vendor.password 
+    });
     if (error) throw error;
   }
 
