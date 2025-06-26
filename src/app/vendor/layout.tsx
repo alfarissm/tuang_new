@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import {
@@ -27,7 +28,6 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Icons } from "@/components/icons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     DropdownMenu,
@@ -70,7 +70,7 @@ export default function VendorLayout({
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
-          <Icons.logo className="size-12 animate-pulse text-muted-foreground" />
+          <Image src="/tuang.svg" alt="Tuang logo" width={48} height={48} className="animate-pulse" />
           <p className="text-muted-foreground">Memuat dasbor...</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function VendorLayout({
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            <Icons.logo className="size-8 text-accent" />
+            <Image src="/tuang.svg" alt="Tuang Vendor logo" width={32} height={32} />
             <span className="text-lg font-semibold font-headline text-accent">
               Tuang Vendor
             </span>
@@ -127,7 +127,7 @@ export default function VendorLayout({
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" data-ai-hint="person avatar" />
-              <AvatarFallback>WS</AvatarFallback>
+              <AvatarFallback>{auth.vendorName?.substring(0, 2).toUpperCase() || 'V'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-semibold text-sm">{auth.vendorName || 'Vendor'}</span>

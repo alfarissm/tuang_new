@@ -114,7 +114,7 @@ export default function AdminDashboardPage() {
                             <TableRow key={order.id}>
                                 <TableCell>
                                     <div className="font-medium">{order.customer_name}</div>
-                                    <div className="text-sm text-muted-foreground">#{order.id.substring(0,7)}</div>
+                                    <div className="text-sm text-muted-foreground">{order.customer_id || '-'}</div>
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>

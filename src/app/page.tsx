@@ -18,7 +18,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icons } from "@/components/icons";
 import { useCart } from "@/context/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
@@ -89,7 +88,7 @@ export default function HomePage() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Link href="/" className="flex items-center gap-2 mr-4">
-          <Icons.logo className="h-8 w-8 text-accent" />
+          <Image src="/tuang.svg" alt="Tuang logo" width={32} height={32} />
           <span className="text-2xl font-bold font-headline text-accent">Tuang</span>
         </Link>
         <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">

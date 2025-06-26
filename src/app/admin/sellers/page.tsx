@@ -41,57 +41,41 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from '@/hooks/use-toast';
 import { useMenu } from '@/context/MenuContext';
+import type { Vendor } from '@/lib/types';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-
-interface Seller {
-  id: number;
-  name: string;
-  // These fields are illustrative for the UI but not stored in context
-  owner: string; 
-  joinDate: string;
-}
 
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminSellersPage() {
   const { toast } = useToast();
-  const { vendors, updateVendorName, deleteVendor } = useMenu();
+  const { vendors, addVendor, updateVendor, deleteVendor } = useMenu();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // The seller list is derived from the MenuContext vendors, but we add local UI fields
-  const sellerList: Seller[] = useMemo(() => {
-    return vendors.map((vendorName, index) => ({
-      id: index + 1,
-      name: vendorName,
-      owner: `Pemilik ${vendorName}`,
-      joinDate: '2023-01-01', // Mock data
-    }));
-  }, [vendors]);
-
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(sellerList.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(vendors.length / ITEMS_PER_PAGE);
   const paginatedSellers = useMemo(() => {
       const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
       const endIndex = startIndex + ITEMS_PER_PAGE;
-      return sellerList.slice(startIndex, endIndex);
-  }, [sellerList, currentPage]);
+      return vendors.slice(startIndex, endIndex);
+  }, [vendors, currentPage]);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  // We only support 'edit' for now, 'add' is complex as it requires adding a menu.
-  const [dialogMode, setDialogMode] = useState<'edit'>('edit'); 
-  const [currentSeller, setCurrentSeller] = useState<Partial<Seller>>({ name: '', owner: '' });
-  const [originalSellerName, setOriginalSellerName] = useState<string>("");
-  const [deleteTarget, setDeleteTarget] = useState<Seller | null>(null);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add'); 
+  const [currentSeller, setCurrentSeller] = useState<Partial<Vendor>>({ name: '', owner: '' });
+  const [deleteTarget, setDeleteTarget] = useState<Vendor | null>(null);
 
-  const openDialog = (mode: 'edit', seller: Seller) => {
+  const openDialog = (mode: 'add' | 'edit', seller?: Vendor) => {
       setDialogMode(mode);
-      setCurrentSeller(seller);
-      setOriginalSellerName(seller.name);
+      if (mode === 'edit' && seller) {
+          setCurrentSeller(seller);
+      } else {
+          setCurrentSeller({ name: '', owner: '' });
+      }
       setIsDialogOpen(true);
   }
 
-  const openDeleteConfirmation = (seller: Seller) => {
+  const openDeleteConfirmation = (seller: Vendor) => {
       setDeleteTarget(seller);
       setIsDeleteDialogOpen(true);
   }
@@ -99,6 +83,7 @@ export default function AdminSellersPage() {
   const closeDialogs = () => {
       setIsDialogOpen(false);
       setIsDeleteDialogOpen(false);
+      setCurrentSeller({ name: '', owner: ''});
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -111,19 +96,33 @@ export default function AdminSellersPage() {
     
     setIsSubmitting(true);
     try {
-        if (dialogMode === 'edit') {
-          await updateVendorName(originalSellerName, currentSeller.name);
+        if (dialogMode === 'add') {
+          await addVendor(currentSeller.name);
+          toast({
+            title: "Penjual Ditambahkan!",
+            description: `Penjual "${currentSeller.name}" telah berhasil ditambahkan.`,
+            className: "bg-accent text-accent-foreground",
+          });
+        } else if (currentSeller.id) {
+          await updateVendor(currentSeller as Vendor);
           toast({
             title: "Penjual Diperbarui!",
             description: `Data untuk "${currentSeller.name}" telah berhasil diperbarui.`,
             className: "bg-accent text-accent-foreground",
           });
         }
-    } catch (error) {
-         toast({ title: "Terjadi kesalahan", description: "Gagal memperbarui penjual.", variant: "destructive"});
+    } catch (error: any) {
+         const isDuplicate = error.message?.includes('duplicate key value violates unique constraint');
+         toast({ 
+            title: "Terjadi kesalahan", 
+            description: isDuplicate ? `Nama penjual "${currentSeller.name}" sudah ada.` : "Gagal menyimpan data penjual.", 
+            variant: "destructive"
+        });
     } finally {
         setIsSubmitting(false);
-        closeDialogs();
+        if (!isSubmitting) { // Only close if not submitting (i.e. on success)
+            closeDialogs();
+        }
     }
   }
 
@@ -131,14 +130,18 @@ export default function AdminSellersPage() {
     if (!deleteTarget) return;
     setIsSubmitting(true);
     try {
-        await deleteVendor(deleteTarget.name);
+        await deleteVendor(deleteTarget.id);
         toast({
           title: "Penjual Dihapus!",
-          description: `Penjual "${deleteTarget.name}" telah berhasil dihapus beserta semua menunya.`,
+          description: `Penjual "${deleteTarget.name}" telah berhasil dihapus.`,
           variant: 'destructive'
         });
     } catch (error) {
-        toast({ title: "Terjadi kesalahan", description: "Gagal menghapus penjual.", variant: "destructive"});
+        toast({ 
+            title: "Gagal Menghapus Penjual", 
+            description: "Pastikan semua menu dari penjual ini telah dihapus terlebih dahulu.", 
+            variant: "destructive"
+        });
     } finally {
         setIsSubmitting(false);
         closeDialogs();
@@ -153,7 +156,7 @@ export default function AdminSellersPage() {
           <p className="text-muted-foreground">Daftar semua penjual yang terdaftar di Tuang.</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button disabled>
+          <Button onClick={() => openDialog('add')}>
             <PlusCircle className="mr-2 h-4 w-4" /> Tambah Penjual
           </Button>
         </div>
@@ -175,8 +178,8 @@ export default function AdminSellersPage() {
                 <TableRow key={seller.id}>
                   <TableCell>{seller.id}</TableCell>
                   <TableCell className="font-medium">{seller.name}</TableCell>
-                  <TableCell>{seller.owner}</TableCell>
-                  <TableCell>{seller.joinDate}</TableCell>
+                  <TableCell>{seller.owner || '-'}</TableCell>
+                  <TableCell>{new Date(seller.created_at!).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -213,13 +216,13 @@ export default function AdminSellersPage() {
         </CardFooter>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Penjual</DialogTitle>
+            <DialogTitle>{dialogMode === 'add' ? 'Tambah Penjual Baru' : 'Edit Penjual'}</DialogTitle>
             <DialogDescription>
-              Ubah detail penjual. Klik simpan jika sudah selesai.
+              {dialogMode === 'add' ? 'Masukkan nama penjual baru.' : 'Ubah detail penjual. Klik simpan jika sudah selesai.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -245,8 +248,7 @@ export default function AdminSellersPage() {
                   value={currentSeller.owner || ''} 
                   onChange={(e) => setCurrentSeller({...currentSeller, owner: e.target.value})} 
                   className="col-span-3" 
-                  required 
-                  disabled
+                  placeholder="(Opsional)"
                 />
               </div>
             </div>
@@ -254,7 +256,7 @@ export default function AdminSellersPage() {
               <Button type="button" variant="ghost" onClick={closeDialogs} disabled={isSubmitting}>Batal</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Simpan Perubahan
+                {dialogMode === 'add' ? 'Simpan' : 'Simpan Perubahan'}
               </Button>
             </DialogFooter>
           </form>
@@ -267,7 +269,7 @@ export default function AdminSellersPage() {
               <AlertDialogHeader>
                   <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Tindakan ini tidak bisa dibatalkan. Ini akan menghapus penjual "{deleteTarget?.name}" dan semua menunya secara permanen.
+                      Tindakan ini tidak bisa dibatalkan. Ini akan menghapus penjual "{deleteTarget?.name}" secara permanen. Aksi ini akan gagal jika penjual masih memiliki menu.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

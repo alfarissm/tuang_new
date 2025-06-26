@@ -19,6 +19,8 @@ interface CartContextType {
   setTableNumber: (table: string) => void;
   customerName: string;
   setCustomerName: (name: string) => void;
+  customerId: string;
+  setCustomerId: (id: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -27,6 +29,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [tableNumber, setTableNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerId, setCustomerId] = useState("");
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -51,9 +54,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setCart([]);
-    // Do not clear table number and customer name upon clearing cart
-    // setTableNumber("");
-    // setCustomerName("");
   }
 
   const totalAmount = useMemo(() => {
@@ -74,7 +74,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     tableNumber,
     setTableNumber,
     customerName,
-    setCustomerName
+    setCustomerName,
+    customerId,
+    setCustomerId
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

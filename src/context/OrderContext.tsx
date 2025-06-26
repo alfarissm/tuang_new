@@ -24,7 +24,7 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { cart, totalAmount, tableNumber, customerName } = useCart();
+  const { cart, totalAmount, tableNumber, customerName, customerId } = useCart();
 
   const fetchOrders = useCallback(async () => {
     // We don't set loading to true here to avoid flickering on re-fetches from subscriptions
@@ -60,7 +60,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       id: orderId,
       table_number: tableNumber,
       customer_name: customerName,
-      customer_id: 'N/A', // Not available in current form
+      customer_id: customerId, // Use customerId from context
       items: cart.map(item => ({
         id: item.id,
         name: item.name,

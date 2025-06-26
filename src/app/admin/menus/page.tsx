@@ -137,7 +137,6 @@ export default function AdminMenusPage() {
     }
     setIsSubmitting(true);
     
-    // imagePreview will be a base64 string for new uploads, or existing http URL for edits without image change.
     const imageUrlToUpload = imagePreview;
 
     try {
@@ -198,11 +197,16 @@ export default function AdminMenusPage() {
           <p className="text-muted-foreground">Daftar semua menu dari semua penjual.</p>
         </div>
         <div className="flex items-center space-x-2">
-           <Button onClick={() => openDialog('add')}>
+           <Button onClick={() => openDialog('add')} disabled={vendors.length === 0 || categories.length === 0}>
               <PlusCircle className="mr-2 h-4 w-4" /> Tambah Menu
             </Button>
         </div>
       </div>
+      {(vendors.length === 0 || categories.length === 0) && (
+        <div className="p-4 text-sm text-center text-muted-foreground bg-muted rounded-md">
+            Anda harus menambahkan <Link href="/admin/vendors" className="font-bold underline">Penjual</Link> dan <Link href="/admin/categories" className="font-bold underline">Kategori</Link> terlebih dahulu sebelum bisa menambahkan menu.
+        </div>
+      )}
       <Card>
         <CardContent className="p-0 mt-6">
           <Table>
@@ -286,7 +290,7 @@ export default function AdminMenusPage() {
                     <SelectValue placeholder="Pilih Penjual" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vendors.map(vendor => <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>)}
+                    {vendors.map(vendor => <SelectItem key={vendor.id} value={vendor.name}>{vendor.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

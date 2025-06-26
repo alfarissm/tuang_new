@@ -3,13 +3,13 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Icons } from "@/components/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoginPage() {
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
-          <Icons.logo className="size-12 animate-pulse text-muted-foreground" />
+          <Image src="/tuang.svg" alt="Tuang logo" width={48} height={48} className="animate-pulse" />
           <p className="text-muted-foreground">Mengarahkan ke dasbor...</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-                <Icons.logo className="h-12 w-12 text-accent" />
+                <Image src="/tuang.svg" alt="Tuang logo" width={48} height={48} />
             </div>
           <CardTitle className="text-2xl font-headline">Admin Login</CardTitle>
           <CardDescription>

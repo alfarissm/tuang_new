@@ -191,6 +191,10 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
                 <span className="font-medium">{order.customer_name || 'Pelanggan'}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-muted-foreground">NIM/NIP</span>
+                <span className="font-medium">{order.customer_id || '-'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">No Meja</span>
                 <span className="font-medium">{order.table_number || '-'}</span>
               </div>

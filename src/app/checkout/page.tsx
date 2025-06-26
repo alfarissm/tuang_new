@@ -34,7 +34,7 @@ type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
 export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { cart, totalAmount, setCustomerName } = useCart();
+  const { cart, totalAmount, setCustomerName, setCustomerId } = useCart();
   const { addOrder } = useOrders();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,6 +49,7 @@ export default function CheckoutPage() {
   async function onSubmit(data: CheckoutFormValues) {
     setIsLoading(true);
     setCustomerName(data.name);
+    setCustomerId(data.id);
     
     try {
         const orderId = await addOrder(data.paymentMethod as "qris" | "cash");
