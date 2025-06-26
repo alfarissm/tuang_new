@@ -56,7 +56,7 @@ const uploadMenuImage = async (imageDataUrl?: string | null): Promise<string | n
 
     if (uploadError) {
       console.error('Supabase upload error:', uploadError);
-      throw uploadError;
+      throw uploadError; // Throw the original Supabase error object
     }
     
     const { data } = supabase.storage
@@ -68,10 +68,11 @@ const uploadMenuImage = async (imageDataUrl?: string | null): Promise<string | n
     }
       
     return data.publicUrl;
-  } catch (error) {
+  } catch (error: any) { // Catch as 'any' to access message property
     console.error('Error during image upload process:', error);
-    // Re-throw the error to be handled by the calling function (e.g., show a toast)
-    throw new Error('Unggahan gambar gagal. Silakan coba lagi.');
+    // Re-throw the specific error message to be handled by the calling function
+    // This makes sure the user sees a meaningful error.
+    throw new Error(error.message || 'Unggahan gambar gagal. Silakan coba lagi.');
   }
 };
 

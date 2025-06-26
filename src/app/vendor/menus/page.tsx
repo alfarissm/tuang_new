@@ -174,11 +174,11 @@ export default function VendorMenusPage() {
             className: "bg-accent text-accent-foreground",
           });
         }
-    } catch (error) {
-        toast({ title: "Terjadi kesalahan", description: "Gagal menyimpan menu.", variant: "destructive"});
+        closeDialogs();
+    } catch (error: any) {
+        toast({ title: "Terjadi kesalahan", description: error.message || "Gagal menyimpan menu.", variant: "destructive"});
     } finally {
         setIsSubmitting(false);
-        closeDialogs();
     }
   }
 
@@ -192,8 +192,8 @@ export default function VendorMenusPage() {
           description: `Menu "${deleteTarget.name}" telah berhasil dihapus.`,
           variant: 'destructive'
         });
-    } catch (error) {
-        toast({ title: "Terjadi kesalahan", description: "Gagal menghapus menu.", variant: "destructive"});
+    } catch (error: any) {
+        toast({ title: "Terjadi kesalahan", description: error.message || "Gagal menghapus menu.", variant: "destructive"});
     } finally {
         setIsSubmitting(false);
         closeDialogs();
@@ -352,7 +352,7 @@ export default function VendorMenusPage() {
                       Gambar
                     </Label>
                     <div className="col-span-3 space-y-2">
-                      <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
+                      <Input id="image" type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageChange} />
                       <div className="w-full aspect-video relative bg-muted rounded-md border flex items-center justify-center">
                           {imagePreview ? (
                               <Image src={imagePreview} alt="Pratinjau menu" fill style={{objectFit:"contain"}} className="p-1" data-ai-hint="food meal"/>
