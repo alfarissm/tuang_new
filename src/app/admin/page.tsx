@@ -1,114 +1,174 @@
 
 "use client"
 
-import * as React from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useOrders } from "@/context/OrderContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DollarSign, ShoppingCart, Users, Utensils, Clock, ArrowRight } from "lucide-react";
+import { useMemo } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { formatDistanceToNow } from 'date-fns';
+import { id } from 'date-fns/locale';
+import { useMenu } from "@/context/MenuContext";
+import { OrderItemStatus } from "@/lib/types";
 
-export default function AdminLoginPage() {
-  const { auth, loginAdmin } = useAuth();
-  const router = useRouter();
-  const [isClient, setIsClient] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (isClient && auth.isAdmin) {
-      router.replace('/admin');
+const getStatusVariant = (status: OrderItemStatus) => {
+    switch(status) {
+        case 'Completed':
+            return 'default'
+        case 'Payment Confirmed':
+            return 'secondary'
+        case 'Order Placed':
+            return 'outline'
+        default:
+            return 'outline'
     }
-  }, [auth.isAdmin, router, isClient]);
+}
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    loginAdmin();
-  }
+export default function AdminDashboardPage() {
+  const { orders } = useOrders();
+  const { menuItems, vendors } = useMenu();
 
-  if (!isClient) {
-     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Card className="mx-auto max-w-sm w-full">
-          <CardHeader className="text-center space-y-4">
-              <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-            <Skeleton className="h-7 w-3/4 mx-auto" />
-            <Skeleton className="h-4 w-full mx-auto" />
+  const totalRevenue = useMemo(() => {
+    return orders.reduce((total, order) => total + order.total_amount, 0);
+  }, [orders]);
+
+  const totalSellers = vendors.length;
+  
+  const recentOrders = useMemo(() => {
+    return [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+  }, [orders]);
+
+  const activityLog = useMemo(() => {
+    return recentOrders.map(order => ({
+        id: order.id,
+        description: `Pesanan baru #${order.id.substring(0,7)} dibuat oleh ${order.customer_name}.`,
+        time: new Date(order.created_at)
+    }));
+  }, [recentOrders]);
+
+  return (
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <h2 className="text-3xl font-bold tracking-tight font-headline">Admin Dashboard</h2>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Pendapatan</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="grid gap-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <Skeleton className="h-10 w-full" />
+          <CardContent>
+            <div className="text-2xl font-bold">Rp{totalRevenue.toLocaleString("id-ID")}</div>
+            <p className="text-xs text-muted-foreground">dari semua pesanan</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Pesanan</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+{orders.length}</div>
+            <p className="text-xs text-muted-foreground">pesanan telah dibuat</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Penjual</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalSellers}</div>
+            <p className="text-xs text-muted-foreground">penjual terdaftar</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Menu</CardTitle>
+            <Utensils className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{menuItems.length}</div>
+            <p className="text-xs text-muted-foreground">menu tersedia</p>
           </CardContent>
         </Card>
       </div>
-    );
-  }
 
-  if (auth.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Image src="/tuang.svg" alt="Tuang logo" width={48} height={48} className="animate-pulse" />
-          <p className="text-muted-foreground">Mengarahkan ke dasbor...</p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4 flex flex-col">
+            <CardHeader>
+                <CardTitle>Info Pesanan Masuk</CardTitle>
+                <CardDescription>5 pesanan terbaru yang masuk.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 flex-grow">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Pelanggan</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {recentOrders.map(order => (
+                            <TableRow key={order.id}>
+                                <TableCell>
+                                    <div className="font-medium">{order.customer_name}</div>
+                                    <div className="text-sm text-muted-foreground">{order.customer_id || '-'}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right">Rp{order.total_amount.toLocaleString("id-ID")}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+                <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href="/admin/orders">
+                        Lihat Semua Pesanan
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardFooter>
+        </Card>
+         <Card className="lg:col-span-3 flex flex-col">
+            <CardHeader>
+                <CardTitle>Log Aktivitas</CardTitle>
+                <CardDescription>Aktivitas terbaru di dalam sistem.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 flex-grow">
+                {activityLog.length > 0 ? activityLog.map(log => (
+                    <div key={log.id} className="flex items-start gap-4">
+                        <div className="bg-muted p-2 rounded-full">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                            <p className="text-sm">{log.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(log.time, { addSuffix: true, locale: id })}
+                            </p>
+                        </div>
+                    </div>
+                )) : (
+                     <div className="text-center text-muted-foreground py-6">
+                        Tidak ada aktivitas.
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+                <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href="/admin/activity">
+                        Lihat Semua Aktivitas
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardFooter>
+        </Card>
       </div>
-    );
-  }
-  
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-                <Image src="/tuang.svg" alt="Tuang logo" width={48} height={48} />
-            </div>
-          <CardTitle className="text-2xl font-headline">Admin Login</CardTitle>
-          <CardDescription>
-            Masukkan kredensial Anda untuk mengakses dasbor admin
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-              </div>
-              <Input id="password" type="password" required placeholder="Masukkan password" />
-            </div>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-              Login
-            </Button>
-          </form>
-           <div className="mt-4 text-center text-sm">
-            Bukan Admin? Kembali ke{' '}
-            <Link href="/" className="underline">
-              Halaman Utama
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

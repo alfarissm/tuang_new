@@ -89,14 +89,13 @@ export default function AdminLoginPage() {
                 type="email"
                 placeholder="admin@example.com"
                 required
-                defaultValue="admin@tuang.com"
               />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
               </div>
-              <Input id="password" type="password" required defaultValue="password" />
+              <Input id="password" type="password" required placeholder="Masukkan password" />
             </div>
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
               Login
