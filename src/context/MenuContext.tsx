@@ -22,6 +22,43 @@ interface MenuContextType {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
+// Helper to upload base64 image to Supabase Storage and return public URL
+const uploadMenuImage = async (base64Data?: string | null): Promise<string> => {
+  // If no new image is provided or if it's already a URL, return it or a placeholder
+  if (!base64Data || !base64Data.startsWith('data:image')) {
+    return base64Data || 'https://placehold.co/300x200.png';
+  }
+
+  try {
+    // Convert base64 to a Blob for uploading
+    const response = await fetch(base64Data);
+    const blob = await response.blob();
+    const fileExtension = blob.type.split('/')[1];
+    const filePath = `public/${Date.now()}.${fileExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images') // Bucket name in Supabase
+      .upload(filePath, blob, {
+        contentType: blob.type,
+        upsert: true,
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get the public URL of the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+      
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    // Fallback to a placeholder if upload fails
+    return 'https://placehold.co/300x200.png';
+  }
+};
+
+
 export function MenuProvider({ children }: { children: ReactNode }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -72,24 +109,25 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   }, [menuItems]);
 
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'created_at'>) => {
+    const finalImageUrl = await uploadMenuImage(item.image_url);
     const { error } = await supabase.from('menu_items').insert([{
         ...item,
-        image_url: item.image_url || 'https://placehold.co/300x200.png'
+        image_url: finalImageUrl
     }]);
     if (error) {
         console.error('Error adding menu item:', error);
         throw error;
     }
-    // Realtime should update state, but we can fetch again for immediate feedback if needed.
   };
 
   const updateMenuItem = async (item: MenuItem) => {
+    const finalImageUrl = await uploadMenuImage(item.image_url);
     const { error } = await supabase.from('menu_items').update({
         name: item.name,
         category: item.category,
         price: item.price,
         vendor: item.vendor,
-        image_url: item.image_url
+        image_url: finalImageUrl
     }).eq('id', item.id);
     if (error) {
         console.error('Error updating menu item:', error)
@@ -98,6 +136,8 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteMenuItem = async (itemId: number) => {
+    // Note: This does not delete the image from storage to keep it simple.
+    // In a production app, you might want to delete the image from Supabase Storage as well.
     const { error } = await supabase.from('menu_items').delete().eq('id', itemId);
     if (error) {
         console.error('Error deleting menu item:', error);

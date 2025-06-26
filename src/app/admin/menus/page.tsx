@@ -58,6 +58,7 @@ const emptyMenu: Partial<MenuItem> = {
     vendor: '',
     category: '',
     price: 0,
+    image_url: null,
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -75,6 +76,7 @@ export default function AdminMenusPage() {
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -88,12 +90,14 @@ export default function AdminMenusPage() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
+      setImageFile(null);
       setImagePreview(currentMenu.image_url || null);
     }
   };
@@ -107,6 +111,7 @@ export default function AdminMenusPage() {
           setCurrentMenu(emptyMenu);
           setImagePreview(null);
       }
+      setImageFile(null);
       setIsDialogOpen(true);
   }
   
@@ -120,6 +125,7 @@ export default function AdminMenusPage() {
       setIsDeleteDialogOpen(false);
       setCurrentMenu(emptyMenu);
       setImagePreview(null);
+      setImageFile(null);
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -131,6 +137,9 @@ export default function AdminMenusPage() {
     }
     setIsSubmitting(true);
     
+    // imagePreview will be a base64 string for new uploads, or existing http URL for edits without image change.
+    const imageUrlToUpload = imagePreview;
+
     try {
         if (dialogMode === 'add') {
           const newMenu = {
@@ -138,7 +147,7 @@ export default function AdminMenusPage() {
             category: currentMenu.category,
             price: Number(currentMenu.price),
             vendor: currentMenu.vendor,
-            image_url: imagePreview || 'https://placehold.co/300x200.png',
+            image_url: imageUrlToUpload,
           };
           await addMenuItem(newMenu);
           toast({
@@ -147,7 +156,7 @@ export default function AdminMenusPage() {
             className: "bg-accent text-accent-foreground",
           });
         } else {
-          const updatedMenu = { ...currentMenu, price: Number(currentMenu.price), image_url: imagePreview || currentMenu.image_url };
+          const updatedMenu = { ...currentMenu, price: Number(currentMenu.price), image_url: imageUrlToUpload };
           await updateMenuItem(updatedMenu as MenuItem);
           toast({
             title: "Menu Diperbarui!",
@@ -308,7 +317,7 @@ export default function AdminMenusPage() {
                   <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
                   <div className="w-full aspect-video relative bg-muted rounded-md border flex items-center justify-center">
                       {imagePreview ? (
-                          <Image src={imagePreview} alt="Pratinjau menu" fill style={{objectFit:"contain"}} className="p-1" data-ai-hint="food meal" />
+                          <Image src={imagePreview} alt="Pratinjau menu" fill style={{objectFit:"contain"}} className="p-1" data-ai-hint="food meal"/>
                       ) : (
                           <span className="text-xs text-muted-foreground">Pratinjau gambar</span>
                       )}

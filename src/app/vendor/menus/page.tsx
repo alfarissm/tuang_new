@@ -59,6 +59,7 @@ const emptyMenu: Partial<MenuItem> = {
     name: '',
     category: '',
     price: 0,
+    image_url: null,
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -78,6 +79,8 @@ export default function VendorMenusPage() {
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -96,12 +99,14 @@ export default function VendorMenusPage() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
+      setImageFile(null);
       setImagePreview(currentMenu.image_url || null);
     }
   };
@@ -115,6 +120,7 @@ export default function VendorMenusPage() {
           setCurrentMenu(emptyMenu);
           setImagePreview(null);
       }
+      setImageFile(null);
       setIsDialogOpen(true);
   }
   
@@ -128,6 +134,7 @@ export default function VendorMenusPage() {
       setIsDeleteDialogOpen(false);
       setCurrentMenu(emptyMenu);
       setImagePreview(null);
+      setImageFile(null);
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -139,6 +146,10 @@ export default function VendorMenusPage() {
     }
     
     setIsSubmitting(true);
+    
+    // imagePreview will be a base64 string for new uploads, or existing http URL for edits without image change.
+    const imageUrlToUpload = imagePreview;
+
     try {
         if (dialogMode === 'add') {
           const newMenu = {
@@ -146,7 +157,7 @@ export default function VendorMenusPage() {
             category: currentMenu.category,
             price: Number(currentMenu.price),
             vendor: vendorName,
-            image_url: imagePreview || 'https://placehold.co/300x200.png',
+            image_url: imageUrlToUpload,
           };
           await addMenuItem(newMenu);
           toast({
@@ -155,7 +166,7 @@ export default function VendorMenusPage() {
             className: "bg-accent text-accent-foreground",
           });
         } else {
-          const updatedMenu = { ...currentMenu, vendor: vendorName, price: Number(currentMenu.price), image_url: imagePreview || currentMenu.image_url };
+          const updatedMenu = { ...currentMenu, vendor: vendorName, price: Number(currentMenu.price), image_url: imageUrlToUpload };
           await updateMenuItem(updatedMenu as MenuItem);
           toast({
             title: "Menu Diperbarui!",
@@ -210,7 +221,7 @@ export default function VendorMenusPage() {
             paginatedMenuItems.map((item) => (
             <Card key={item.id} className="flex items-center p-4 justify-between">
                 <div className="flex items-center gap-4">
-                    <img src={item.image_url} alt={item.name} className="h-16 w-16 rounded-md object-cover" data-ai-hint="food meal"/>
+                    <Image src={item.image_url || 'https://placehold.co/64x64.png'} alt={item.name} className="h-16 w-16 rounded-md object-cover" width={64} height={64} data-ai-hint="food meal"/>
                     <div>
                         <h3 className="font-semibold">{item.name}</h3>
                         <Badge variant="outline" className="mt-1">{item.category}</Badge>

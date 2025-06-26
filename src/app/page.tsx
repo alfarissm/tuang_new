@@ -237,7 +237,7 @@ export default function HomePage() {
                   <Card key={item.id} className="overflow-hidden flex flex-col group">
                     <CardHeader className="p-0 relative">
                       <Image
-                        src={item.image_url}
+                        src={item.image_url || 'https://placehold.co/300x200.png'}
                         alt={item.name}
                         width={300}
                         height={200}
@@ -288,7 +288,7 @@ export default function HomePage() {
                     {cart.map((item) => (
                       <div key={item.id} className="flex items-center justify-between">
                         <div className="flex items-start gap-3">
-                          <Image src={item.image_url} alt={item.name} width={64} height={64} className="rounded-md object-cover h-16 w-16" data-ai-hint="food meal"/>
+                          <Image src={item.image_url || 'https://placehold.co/64x64.png'} alt={item.name} width={64} height={64} className="rounded-md object-cover h-16 w-16" data-ai-hint="food meal"/>
                           <div>
                             <p className="font-semibold leading-tight">{item.name}</p>
                             <p className="text-sm text-muted-foreground">Rp{item.price.toLocaleString("id-ID")}</p>

@@ -5,7 +5,7 @@ export interface MenuItem {
   category: string;
   price: number;
   vendor: string;
-  image_url: string;
+  image_url: string | null; // Can be null initially
   created_at?: string;
 }
 
