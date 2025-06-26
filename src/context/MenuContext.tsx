@@ -15,7 +15,7 @@ interface MenuContextType {
   addCategory: (name: string) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
-  addVendor: (name: string) => Promise<void>;
+  addVendor: (name: string, owner: string | undefined, password: string) => Promise<void>;
   updateVendor: (vendor: Vendor) => Promise<void>;
   deleteVendor: (vendorId: number) => Promise<void>;
   isLoading: boolean;
@@ -155,13 +155,21 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  const addVendor = async (name: string) => {
-    const { error } = await supabase.from('vendors').insert([{ name }]);
+  const addVendor = async (name: string, owner: string | undefined, password: string) => {
+    const { error } = await supabase.from('vendors').insert([{ name, owner, password }]);
     if (error) throw error;
   };
 
   const updateVendor = async (vendor: Vendor) => {
-    const { error } = await supabase.from('vendors').update({ name: vendor.name, owner: vendor.owner }).eq('id', vendor.id);
+    const updateData: { name: string; owner?: string; password?: string } = {
+        name: vendor.name,
+        owner: vendor.owner
+    };
+    // Only include password in the update if a new one was provided
+    if (vendor.password) {
+        updateData.password = vendor.password;
+    }
+    const { error } = await supabase.from('vendors').update(updateData).eq('id', vendor.id);
     if (error) throw error;
   }
 

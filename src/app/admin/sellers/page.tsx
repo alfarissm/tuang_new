@@ -45,6 +45,7 @@ import type { Vendor } from '@/lib/types';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 
 const ITEMS_PER_PAGE = 10;
+const emptySeller: Partial<Vendor> = { name: '', owner: '', password: '' };
 
 export default function AdminSellersPage() {
   const { toast } = useToast();
@@ -62,15 +63,16 @@ export default function AdminSellersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add'); 
-  const [currentSeller, setCurrentSeller] = useState<Partial<Vendor>>({ name: '', owner: '' });
+  const [currentSeller, setCurrentSeller] = useState<Partial<Vendor>>(emptySeller);
   const [deleteTarget, setDeleteTarget] = useState<Vendor | null>(null);
 
   const openDialog = (mode: 'add' | 'edit', seller?: Vendor) => {
       setDialogMode(mode);
       if (mode === 'edit' && seller) {
-          setCurrentSeller(seller);
+          // Don't fetch password for editing, just allow setting a new one
+          setCurrentSeller({ ...seller, password: '' });
       } else {
-          setCurrentSeller({ name: '', owner: '' });
+          setCurrentSeller(emptySeller);
       }
       setIsDialogOpen(true);
   }
@@ -83,7 +85,7 @@ export default function AdminSellersPage() {
   const closeDialogs = () => {
       setIsDialogOpen(false);
       setIsDeleteDialogOpen(false);
-      setCurrentSeller({ name: '', owner: ''});
+      setCurrentSeller(emptySeller);
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -93,17 +95,23 @@ export default function AdminSellersPage() {
         toast({ title: "Nama warung tidak boleh kosong", variant: "destructive"});
         return;
     }
+
+    if (dialogMode === 'add' && !currentSeller.password) {
+        toast({ title: "Password wajib diisi", description: "Password diperlukan untuk penjual baru.", variant: "destructive"});
+        return;
+    }
     
     setIsSubmitting(true);
     try {
-        if (dialogMode === 'add') {
-          await addVendor(currentSeller.name);
+        if (dialogMode === 'add' && currentSeller.password) {
+          await addVendor(currentSeller.name, currentSeller.owner, currentSeller.password);
           toast({
             title: "Penjual Ditambahkan!",
             description: `Penjual "${currentSeller.name}" telah berhasil ditambahkan.`,
             className: "bg-accent text-accent-foreground",
           });
         } else if (currentSeller.id) {
+          // Password field is for setting a new password, so it can be blank
           await updateVendor(currentSeller as Vendor);
           toast({
             title: "Penjual Diperbarui!",
@@ -120,9 +128,7 @@ export default function AdminSellersPage() {
         });
     } finally {
         setIsSubmitting(false);
-        if (!isSubmitting) { // Only close if not submitting (i.e. on success)
-            closeDialogs();
-        }
+        closeDialogs();
     }
   }
 
@@ -222,7 +228,7 @@ export default function AdminSellersPage() {
           <DialogHeader>
             <DialogTitle>{dialogMode === 'add' ? 'Tambah Penjual Baru' : 'Edit Penjual'}</DialogTitle>
             <DialogDescription>
-              {dialogMode === 'add' ? 'Masukkan nama penjual baru.' : 'Ubah detail penjual. Klik simpan jika sudah selesai.'}
+              {dialogMode === 'add' ? 'Masukkan detail penjual baru.' : 'Ubah detail penjual. Klik simpan jika sudah selesai.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -249,6 +255,20 @@ export default function AdminSellersPage() {
                   onChange={(e) => setCurrentSeller({...currentSeller, owner: e.target.value})} 
                   className="col-span-3" 
                   placeholder="(Opsional)"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Password
+                </Label>
+                <Input 
+                  id="password" 
+                  type="password"
+                  value={currentSeller.password || ''} 
+                  onChange={(e) => setCurrentSeller({...currentSeller, password: e.target.value})} 
+                  className="col-span-3" 
+                  placeholder={dialogMode === 'edit' ? 'Isi untuk mengubah' : 'Wajib diisi'}
+                  required={dialogMode === 'add'}
                 />
               </div>
             </div>

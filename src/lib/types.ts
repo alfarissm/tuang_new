@@ -1,91 +1,44 @@
 
-"use client";
-
-import type { MenuItem } from '@/lib/types';
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
-
-interface CartItem extends MenuItem {
-  quantity: number;
+export interface MenuItem {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  vendor: string;
+  image_url: string | null; // Can be null initially
+  created_at?: string;
 }
 
-interface CartContextType {
-  cart: CartItem[];
-  addToCart: (item: MenuItem) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
-  clearCart: () => void;
-  totalAmount: number;
-  totalItems: number;
-  tableNumber: string;
-  setTableNumber: (table: string) => void;
-  customerName: string;
-  setCustomerName: (name: string) => void;
-  customerId: string;
-  setCustomerId: (id: string) => void;
+export interface Category {
+  id: number;
+  name: string;
+  created_at?: string;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [tableNumber, setTableNumber] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerId, setCustomerId] = useState("");
-
-  const addToCart = (item: MenuItem) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
-      if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
-        );
-      }
-      return [...prevCart, { ...item, quantity: 1 }];
-    });
-  };
-
-  const updateQuantity = (itemId: number, quantity: number) => {
-    setCart((prevCart) => {
-      if (quantity <= 0) {
-        return prevCart.filter((item) => item.id !== itemId);
-      }
-      return prevCart.map((item) => (item.id === itemId ? { ...item, quantity } : item));
-    });
-  };
-
-  const clearCart = () => {
-    setCart([]);
-  }
-
-  const totalAmount = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [cart]);
-
-  const totalItems = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
-  }, [cart]);
-  
-  const value = {
-    cart,
-    addToCart,
-    updateQuantity,
-    clearCart,
-    totalAmount,
-    totalItems,
-    tableNumber,
-    setTableNumber,
-    customerName,
-    setCustomerName,
-    customerId,
-    setCustomerId
-  };
-
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+export interface Vendor {
+  id: number;
+  name: string;
+  owner?: string;
+  password?: string;
+  created_at?: string;
 }
 
-export function useCart() {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
+// The 'items' array will be stored as a JSONB column in Supabase
+export interface Order {
+  id: string;
+  table_number: string;
+  customer_name: string;
+  customer_id: string;
+  items: Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    price: number;
+    vendor: string;
+  }>;
+  total_amount: number;
+  status: 'Order Placed' | 'Payment Confirmed' | 'Completed';
+  payment_method: 'qris' | 'cash';
+  created_at: string;
+  rating?: number;
 }
