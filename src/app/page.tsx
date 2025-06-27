@@ -4,14 +4,14 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, PlusCircle, MinusCircle, ShoppingCart, Moon, Sun, Utensils } from "lucide-react";
+import { Search, PlusCircle, MinusCircle, ShoppingCart, Moon, Sun, Utensils, History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,6 +22,8 @@ import { useCart } from "@/context/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
 import { useMenu } from "@/context/MenuContext";
+import { useOrders } from "@/context/OrderContext";
+import type { OrderItemStatus } from "@/lib/types";
 
 const MenuGridSkeleton = () => (
   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
@@ -42,6 +44,19 @@ const MenuGridSkeleton = () => (
   </div>
 );
 
+const getStatusVariant = (status: OrderItemStatus) => {
+    switch(status) {
+        case 'Completed':
+            return 'default'
+        case 'Payment Confirmed':
+            return 'secondary'
+        case 'Order Placed':
+            return 'outline'
+        default:
+            return 'outline'
+    }
+}
+
 export default function HomePage() {
   const {
     cart,
@@ -51,8 +66,13 @@ export default function HomePage() {
     totalItems,
     tableNumber,
     setTableNumber,
+    customerName,
+    setCustomerName,
+    customerId,
+    setCustomerId,
   } = useCart();
-  const { menuItems, categories: menuCategories, isLoading } = useMenu();
+  const { menuItems, categories: menuCategories, isLoading: isMenuLoading } = useMenu();
+  const { myOrders, isLoading: isOrdersLoading } = useOrders();
   const { setTheme } = useTheme();
 
   const [isClient, setIsClient] = useState(false);
@@ -76,7 +96,7 @@ export default function HomePage() {
   }, [searchTerm, selectedCategory, menuItems]);
 
   const handleStartOrdering = () => {
-    if (localTableNumber.trim()) {
+    if (localTableNumber.trim() && customerName.trim() && customerId.trim()) {
       setTableNumber(localTableNumber);
       setShowTableNumberError(false);
     } else {
@@ -92,6 +112,46 @@ export default function HomePage() {
           <span className="text-2xl font-bold font-headline text-accent">Tuang</span>
         </Link>
         <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+                <Button variant="ghost" className="px-2 sm:px-4">
+                    <History className="mr-2 h-4 w-4" />
+                    Pesanan Saya
+                </Button>
+            </SheetTrigger>
+            <SheetContent className="flex flex-col">
+                <SheetHeader>
+                    <SheetTitle className="font-headline text-2xl">Riwayat Pesanan</SheetTitle>
+                    <SheetDescription>
+                    Berikut adalah daftar pesanan yang pernah Anda buat di perangkat ini.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="flex-grow space-y-2 overflow-y-auto pr-2 py-4">
+                    {isOrdersLoading ? (
+                        <p className="text-center text-muted-foreground pt-10">Memuat riwayat...</p>
+                    ) : myOrders.length > 0 ? (
+                        myOrders.map((order) => (
+                            <SheetClose asChild key={order.id}>
+                                <Link href={`/order/${order.id}`}>
+                                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer">
+                                        <div>
+                                            <p className="font-semibold text-primary">Pesanan #{order.id.substring(0, 7)}</p>
+                                            <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString('id-ID', {day: '2-digit', month: 'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
+                                            <p className="font-bold text-sm mt-1">Rp{order.total_amount.toLocaleString("id-ID")}</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </SheetClose>
+                        ))
+                    ) : (
+                        <p className="text-center text-muted-foreground pt-10">Anda belum memiliki riwayat pesanan.</p>
+                    )}
+                </div>
+            </SheetContent>
+          </Sheet>
            <Link href="/vendor/login">
             <Button variant="ghost" className="px-2 sm:px-4">Vendor</Button>
           </Link>
@@ -158,10 +218,18 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle className="font-headline text-2xl text-center">Selamat Datang di Tuang</CardTitle>
               <CardDescription className="text-center">
-                Silakan masukkan nomor meja Anda untuk memulai pemesanan.
+                Silakan isi data Anda untuk memulai pemesanan.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <label htmlFor="customerName" className="text-sm font-medium">Nama Lengkap</label>
+                    <Input id="customerName" placeholder="Masukkan nama Anda" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                    <label htmlFor="customerId" className="text-sm font-medium">NIM / NIP</label>
+                    <Input id="customerId" placeholder="Masukkan NIM atau NIP" value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
+                </div>
                <div className="space-y-2">
                  <label htmlFor="tableNumber" className="text-sm font-medium">Nomor Meja</label>
                   <Input
@@ -171,15 +239,12 @@ export default function HomePage() {
                     value={localTableNumber}
                     onChange={(e) => {
                       setLocalTableNumber(e.target.value);
-                      if(e.target.value.trim()){
-                        setShowTableNumberError(false);
-                      }
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && handleStartOrdering()}
-                    className="mt-1 text-center text-lg h-12"
+                    className="mt-1"
                   />
-                  {showTableNumberError && <p className="text-destructive text-xs text-center pt-2">Nomor meja tidak boleh kosong.</p>}
                </div>
+                {showTableNumberError && <p className="text-destructive text-xs text-center pt-2">Semua kolom wajib diisi.</p>}
             </CardContent>
             <CardFooter>
               <Button onClick={handleStartOrdering} className="w-full text-lg py-6 bg-accent hover:bg-accent/90">
@@ -195,7 +260,7 @@ export default function HomePage() {
               <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold font-headline">Pilih Menu</h2>
-                  <p className="text-muted-foreground text-sm">Selamat menikmati waktu Anda!</p>
+                  <p className="text-muted-foreground text-sm">Pesanan untuk: <span className="font-bold text-foreground">{customerName}</span></p>
                 </div>
                 <div className="text-left sm:text-right bg-muted px-3 py-1 rounded-md">
                     <p className="text-xs text-muted-foreground">Nomor Meja</p>
@@ -230,7 +295,7 @@ export default function HomePage() {
               ))}
             </div>
 
-            {isLoading ? <MenuGridSkeleton /> : (
+            {isMenuLoading ? <MenuGridSkeleton /> : (
                 <>
                 {filteredMenuItems.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">

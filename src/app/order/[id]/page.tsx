@@ -90,7 +90,6 @@ const RatingInput = ({ orderId, currentRating }: { orderId: string, currentRatin
 export default function OrderStatusPage({ params }: { params: { id: string } }) {
   const { getOrderById, isLoading } = useOrders();
   const order = getOrderById(params.id);
-  const { clearCart } = useCart();
   const { toast } = useToast();
   const [hasNotified, setHasNotified] = useState(false);
 
@@ -110,7 +109,7 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
   }, [order, toast, hasNotified]);
 
   const handleNewOrder = () => {
-    clearCart();
+    // Cart is now cleared automatically by OrderContext after a successful order.
   }
   
   if (isLoading) {
