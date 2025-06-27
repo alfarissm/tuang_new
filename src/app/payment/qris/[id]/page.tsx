@@ -65,7 +65,7 @@ export default function QrisPaymentPage({ params }: { params: { id: string } }) 
         <CardContent className="space-y-6">
           <div className="flex justify-center">
             <Image 
-              src="https://placehold.co/300x300.png" 
+              src="/public/qria.png" 
               alt="QR Code" 
               width={300} 
               height={300} 
