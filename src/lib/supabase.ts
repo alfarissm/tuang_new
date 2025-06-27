@@ -1,7 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Ambil variabel lingkungan. Ganti dengan kredensial Supabase Anda jika tidak menggunakan .env
+// Ambil variabel lingkungan. Ganti dengan kredensial Supabase jika tidak menggunakan .env
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project-id.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-public-key';
 
