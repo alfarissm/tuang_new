@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useOrders } from "@/context/OrderContext";
 
 const checkoutFormSchema = z.object({
+  name: z.string().min(1, { message: "Nama lengkap tidak boleh kosong." }),
+  id: z.string().min(1, { message: "NIM / NIP tidak boleh kosong." }),
   paymentMethod: z.enum(["qris", "cash"], {
     required_error: "Anda harus memilih metode pembayaran.",
   }),
@@ -38,14 +40,17 @@ export default function CheckoutPage() {
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
-    defaultValues: {},
+    defaultValues: {
+      name: "",
+      id: "",
+    },
   });
 
   async function onSubmit(data: CheckoutFormValues) {
     setIsLoading(true);
     
     try {
-        const orderId = await addOrder(data.paymentMethod as "qris" | "cash");
+        const orderId = await addOrder(data.paymentMethod as "qris" | "cash", { name: data.name, id: data.id });
         
         if (data.paymentMethod === 'qris') {
             router.push(`/payment/qris/${orderId}`);
@@ -111,6 +116,38 @@ export default function CheckoutPage() {
           <Separator className="my-6" />
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama Lengkap</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Masukkan nama Anda" className="pl-9" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>NIM / NIP</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Masukkan NIM atau NIP Anda" className="pl-9" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
                <FormField
                 control={form.control}
                 name="paymentMethod"
