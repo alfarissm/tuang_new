@@ -5,7 +5,7 @@ export interface MenuItem {
   category: string;
   price: number;
   vendor: string;
-  image_url: string | null; // Can be null initially
+  image_url: string | null; 
   created_at?: string;
 }
 
@@ -25,12 +25,13 @@ export interface Vendor {
 
 export type OrderItemStatus = 'Order Placed' | 'Payment Confirmed' | 'Completed';
 
-
+// The 'items' array will be stored as a JSONB column in Supabase
 export interface Order {
   id: string;
   table_number: string;
   customer_name: string;
   customer_id: string;
+  note?: string;
   items: Array<{
     id: number;
     name: string;
@@ -41,7 +42,7 @@ export interface Order {
     status: OrderItemStatus; 
   }>;
   total_amount: number;
-  status: OrderItemStatus; 
+  status: OrderItemStatus;
   payment_method: 'qris' | 'cash';
   created_at: string;
   rating?: number;

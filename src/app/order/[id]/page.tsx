@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, CheckCircle, FileText, Bell, Star, Wallet, Loader2, Hourglass } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Bell, Star, Wallet, Loader2, Hourglass, StickyNote } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -231,6 +231,21 @@ export default function OrderStatusPage({ params }: { params: { id: string } }) 
               </div>
             </div>
           </div>
+
+          {order.note && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h3 className="font-semibold font-headline flex items-center gap-2">
+                  <StickyNote className="h-5 w-5 text-accent" />
+                  Catatan dari Anda
+                </h3>
+                <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md whitespace-pre-wrap">
+                  {order.note}
+                </p>
+              </div>
+            </>
+          )}
 
           {currentStatus === 'Completed' && (
              <div className="space-y-6">

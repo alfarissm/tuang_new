@@ -1,5 +1,5 @@
 
-"use client"
+"use client";
 
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useToast } from '@/hooks/use-toast';
 import type { OrderItemStatus } from '@/lib/types';
-import { ChevronDown, ChevronUp, Wallet } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wallet, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -146,6 +146,15 @@ export default function VendorOrdersPage() {
                                 <Button size="sm" onClick={() => handleCashPaymentConfirmation(order.id)}>Konfirmasi Bayar</Button>
                             </AlertDescription>
                         </Alert>
+                    )}
+                    {order.note && (
+                        <div className="space-y-1">
+                            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
+                                <StickyNote className="h-4 w-4" />
+                                Catatan Pelanggan:
+                            </h4>
+                            <p className="text-sm bg-muted/50 p-2 rounded-md whitespace-pre-wrap">{order.note}</p>
+                        </div>
                     )}
                     <div className="space-y-4">
                       {order.items.map(item => (

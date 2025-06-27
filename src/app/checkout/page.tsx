@@ -20,10 +20,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useOrders } from "@/context/OrderContext";
+import { Textarea } from "@/components/ui/textarea";
 
 const checkoutFormSchema = z.object({
-  name: z.string().min(1, { message: "Nama lengkap tidak boleh kosong." }),
-  id: z.string().min(1, { message: "NIM / NIP tidak boleh kosong." }),
+  customerName: z.string().min(1, "Nama tidak boleh kosong."),
+  customerId: z.string().min(1, "NIM/NIP tidak boleh kosong."),
+  note: z.string().optional(),
   paymentMethod: z.enum(["qris", "cash"], {
     required_error: "Anda harus memilih metode pembayaran.",
   }),
@@ -34,15 +36,16 @@ type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
 export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { cart, totalAmount } = useCart();
+  const { cart, totalAmount, clearCart } = useCart();
   const { addOrder } = useOrders();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
-      name: "",
-      id: "",
+      customerName: "",
+      customerId: "",
+      note: "",
     },
   });
 
@@ -50,7 +53,16 @@ export default function CheckoutPage() {
     setIsLoading(true);
     
     try {
-        const orderId = await addOrder(data.paymentMethod as "qris" | "cash", { name: data.name, id: data.id });
+        const orderId = await addOrder({
+            paymentMethod: data.paymentMethod as "qris" | "cash",
+            customerInfo: {
+                customerName: data.customerName,
+                customerId: data.customerId,
+            },
+            note: data.note,
+        });
+        
+        clearCart();
         
         if (data.paymentMethod === 'qris') {
             router.push(`/payment/qris/${orderId}`);
@@ -116,38 +128,49 @@ export default function CheckoutPage() {
           <Separator className="my-6" />
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama Lengkap</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Masukkan nama Anda" className="pl-9" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>NIM / NIP</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Masukkan NIM atau NIP Anda" className="pl-9" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nama Lengkap</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Masukkan nama Anda" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="customerId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>NIM / NIP</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Masukkan NIM atau NIP" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="note"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Catatan (Opsional)</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="Contoh: Tidak pakai pedas, es batunya sedikit saja."
+                                    className="resize-none"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                <FormField
                 control={form.control}
                 name="paymentMethod"

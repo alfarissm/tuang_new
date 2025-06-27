@@ -7,6 +7,13 @@ import { useCart } from './CartContext';
 import { supabase } from '@/lib/supabase';
 
 type PaymentMethod = 'qris' | 'cash';
+type CustomerInfo = { customerName: string; customerId: string };
+type AddOrderPayload = {
+  paymentMethod: PaymentMethod;
+  customerInfo: CustomerInfo;
+  note?: string;
+};
+
 
 // Helper function to derive the overall order status from its items
 const getOverallStatus = (items: Order['items']): OrderItemStatus => {
@@ -24,7 +31,7 @@ const getOverallStatus = (items: Order['items']): OrderItemStatus => {
 
 interface OrderContextType {
   orders: Order[];
-  addOrder: (paymentMethod: PaymentMethod, customerDetails: { name: string; id: string }) => Promise<string>;
+  addOrder: (payload: AddOrderPayload) => Promise<string>;
   updateItemStatus: (orderId: string, itemId: number, status: OrderItemStatus) => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderItemStatus) => Promise<void>;
   addRatingToOrder: (orderId: string, rating: number) => Promise<void>;
@@ -66,15 +73,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchOrders]);
 
-  const addOrder = useCallback(async (paymentMethod: PaymentMethod, customerDetails: { name: string; id: string }): Promise<string> => {
+  const addOrder = useCallback(async (payload: AddOrderPayload): Promise<string> => {
+    const { paymentMethod, customerInfo, note } = payload;
     const orderId = `ORD${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
     const initialStatus: OrderItemStatus = paymentMethod === 'qris' ? 'Payment Confirmed' : 'Order Placed';
     
     const newOrder = {
       id: orderId,
       table_number: tableNumber,
-      customer_name: customerDetails.name,
-      customer_id: customerDetails.id,
+      customer_name: customerInfo.customerName,
+      customer_id: customerInfo.customerId,
+      note: note,
       items: cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -94,6 +103,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('Error adding order:', error);
       throw error;
     }
+
     return orderId;
   }, [cart, totalAmount, tableNumber]);
   
