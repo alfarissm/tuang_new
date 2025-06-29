@@ -1,136 +1,87 @@
 
 "use client"
 
-import { useMemo } from 'react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useMemo } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { useOrders } from '@/context/OrderContext';
-import { useAuth } from '@/context/AuthContext';
-import { format } from 'date-fns';
+import { useOrders } from "@/context/OrderContext";
 
 const chartConfig = {
   revenue: {
-    label: "Pendapatan",
+    label: "Pendapatan (juta Rp)",
     color: "hsl(var(--chart-1))",
   },
-}
-
-// Helper to format currency for axis ticks and tooltips
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `Rp${(value / 1000000).toFixed(1)}jt`;
-  }
-  if (value >= 1000) {
-    return `Rp${Math.round(value / 1000)}rb`;
-  }
-  return `Rp${value}`;
 };
 
-const formatFullCurrency = (value: number) => {
-    return `Rp${value.toLocaleString('id-ID')}`;
-}
+// Helper to format currency for axis ticks
+const formatCurrency = (value: number) => {
+  if (value === 0) return '0';
+  if (value < 1) return `Rp${(value * 1000).toFixed(0)}rb`; // For values less than 1 million
+  return `${value.toFixed(0)}jt`;
+};
 
-export default function VendorReportsPage() {
-  const { auth } = useAuth();
-  const vendorName = auth.vendorName || "";
-  const { getVendorOrders } = useOrders();
-  const vendorOrders = getVendorOrders(vendorName);
+
+export default function AdminReportsPage() {
+  const { orders } = useOrders();
 
   const chartData = useMemo(() => {
-     if (vendorOrders.length === 0) {
-      return [];
-    }
-
-    const dailyRevenue: { [key: string]: number } = {};
-
-    vendorOrders.forEach(order => {
-      const date = format(new Date(order.created_at), 'yyyy-MM-dd');
-      // getVendorOrders already calculates vendor-specific total_amount
-      const revenueForOrder = order.total_amount; 
-
-      if (!dailyRevenue[date]) {
-        dailyRevenue[date] = 0;
-      }
-      dailyRevenue[date] += revenueForOrder;
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthlyRevenue: { [key: string]: number } = {};
+    
+    months.forEach(month => {
+      monthlyRevenue[month] = 0;
     });
 
-    return Object.keys(dailyRevenue).map(date => ({
-      date,
-      revenue: dailyRevenue[date],
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [vendorOrders]);
+    orders.forEach(order => {
+      const month = new Date(order.created_at).toLocaleString('default', { month: 'long' });
+      if (monthlyRevenue.hasOwnProperty(month)) {
+        monthlyRevenue[month] += order.total_amount;
+      }
+    });
+
+    return Object.keys(monthlyRevenue).map(month => ({
+      month,
+      revenue: monthlyRevenue[month] / 1000000, // in millions
+    }));
+  }, [orders]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 md:pt-6">
-      <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Laporan Pendapatan</h2>
-      <p className="text-muted-foreground">Analisis pendapatan dari warung Anda ({vendorName}).</p>
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Laporan Keuangan</h2>
+      <p className="text-muted-foreground">Analisis pendapatan dan penjualan Tuang.</p>
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Grafik Pendapatan Harian</CardTitle>
-          <CardDescription>Total pendapatan (Rp) yang diterima per hari.</CardDescription>
+          <CardTitle>Pendapatan Bulanan</CardTitle>
+          <CardDescription>Pendapatan dalam jutaan (jt) atau ribuan (rb) Rupiah.</CardDescription>
         </CardHeader>
         <CardContent>
-          {chartData.length > 1 ? (
-            <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-              <LineChart
-                accessibilityLayer
-                data={chartData}
-                margin={{
-                  top: 10,
-                  right: 10,
-                  left: -10,
-                  bottom: 10,
-                }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => new Date(value).toLocaleDateString("id-ID", { day: 'numeric', month: 'short' })}
-                  interval="auto"
-                  tick={{ fontSize: 12 }}
+           <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 10, bottom: 10, left: -10 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                tickMargin={5}
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 3)}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                tickFormatter={(value) => formatCurrency(Number(value))}
+                tick={{ fontSize: 12 }}
                 />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => formatCurrency(Number(value))}
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent
-                    labelFormatter={(label) => new Date(label).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long' })}
-                    formatter={(value) => formatFullCurrency(Number(value))}
-                    indicator="dot"
-                  />}
-                />
-                <Line
-                  dataKey="revenue"
-                  type="monotone"
-                  stroke="var(--color-revenue)"
-                  strokeWidth={2}
-                  dot={{
-                    fill: "var(--color-revenue)",
-                  }}
-                  activeDot={{
-                    r: 6,
-                  }}
-                />
-              </LineChart>
-            </ChartContainer>
-          ) : (
-            <div className="text-center text-muted-foreground py-12">
-              {chartData.length > 0 ? 'Dibutuhkan setidaknya data dari dua hari berbeda untuk menampilkan grafik.' : 'Belum ada data pendapatan untuk ditampilkan.'}
-            </div>
-          )}
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
+            </BarChart>
+          </ChartContainer>
         </CardContent>
       </Card>
     </div>
