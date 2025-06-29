@@ -14,6 +14,7 @@ import { useMenu } from "@/context/MenuContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Store, KeyRound } from "lucide-react";
 
 export default function VendorLoginPage() {
   const { auth, loginVendor } = useAuth();
@@ -21,7 +22,7 @@ export default function VendorLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [selectedVendor, setSelectedVendor] = React.useState("");
-  const [password, setPassword] = React.useState("password123");
+  const [password, setPassword] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
 
@@ -121,8 +122,10 @@ export default function VendorLoginPage() {
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="vendor-select">Nama Warung</Label>
-               <Select value={selectedVendor} onValueChange={setSelectedVendor}>
-                  <SelectTrigger id="vendor-select">
+               <div className="relative">
+                <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+                  <SelectTrigger id="vendor-select" className="pl-10">
                     <SelectValue placeholder="Pilih warung Anda" />
                   </SelectTrigger>
                   <SelectContent>
@@ -133,16 +136,22 @@ export default function VendorLoginPage() {
                     )}
                   </SelectContent>
                 </Select>
+               </div>
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input 
-                    id="password" 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      id="password" 
+                      type="password" 
+                      required 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10"
+                  />
+                </div>
             </div>
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={vendors.length === 0 || isLoading}>
               {isLoading ? 'Memverifikasi...' : 'Login'}
