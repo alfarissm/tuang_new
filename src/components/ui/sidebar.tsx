@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -538,6 +539,7 @@ const SidebarMenuButton = React.forwardRef<
   React.ComponentProps<"button"> & {
     asChild?: boolean
     isActive?: boolean
+    icon?: React.ReactNode
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
@@ -548,6 +550,8 @@ const SidebarMenuButton = React.forwardRef<
       variant = "default",
       size = "default",
       tooltip,
+      icon,
+      children,
       className,
       ...props
     },
@@ -564,7 +568,10 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
-      />
+      >
+        {icon}
+        <span>{children}</span>
+      </Comp>
     )
 
     if (!tooltip) {
@@ -761,3 +768,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
